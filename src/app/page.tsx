@@ -3,6 +3,7 @@ import Hero from "@/components/sections/Hero";
 import SeamlessExperience from "@/components/sections/SeamlessExperience";
 import WalletCards from "@/components/sections/WalletCards";
 import MarketsTogether from "@/components/sections/MarketsTogether";
+import DeepDive from "@/components/sections/DeepDive";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
         <SeamlessExperience />
         <WalletCards />
         <MarketsTogether />
+        <DeepDive />
       </main>
     </>
   );

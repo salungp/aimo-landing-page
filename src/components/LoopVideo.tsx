@@ -3,7 +3,9 @@
 import { useEffect, useRef } from "react";
 
 type LoopVideoProps = {
-  webm: string;
+  /** Optional — omit to serve the mp4 alone (e.g. when the source must stay
+   * untranscoded and a re-encoded VP9 copy would be picked in preference). */
+  webm?: string;
   mp4: string;
   poster: string;
   className?: string;
@@ -48,7 +50,7 @@ export default function LoopVideo({ webm, mp4, poster, className }: LoopVideoPro
       preload="auto"
       poster={poster}
     >
-      <source src={webm} type="video/webm" />
+      {webm ? <source src={webm} type="video/webm" /> : null}
       <source src={mp4} type="video/mp4" />
     </video>
   );

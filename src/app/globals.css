@@ -36,6 +36,7 @@
   --color-black-90: var(--color-black-90);
 
   --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
 
   /* Design breakpoints from Figma: mobile 393, tablet 768, desktop 1440, wide 1920 */
   --breakpoint-tablet: 768px;
