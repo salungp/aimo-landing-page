@@ -38,7 +38,7 @@ export default function DeepDive() {
     <section className="relative isolate overflow-hidden py-20 tablet:py-28 desktop:py-[94px]">
       <LoopVideo
         mp4="/video/deepdive-bg-original.mp4"
-        poster="/video/deepdive-bg-poster.png"
+        poster="/video/deepdive-bg-poster.webp"
         className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
       />
 
