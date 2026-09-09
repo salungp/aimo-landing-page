@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #05130a;
+  --foreground: #ffffff;
+
+  --color-primary: #a7f932;
+  --color-primary-dark: #8fee07;
+  --color-ink: #1a1a1a;
+
+  --color-muted-10: rgba(255, 255, 255, 0.1);
+  --color-muted-20: rgba(255, 255, 255, 0.2);
+  --color-muted-40: rgba(255, 255, 255, 0.4);
+  --color-muted-60: rgba(255, 255, 255, 0.6);
+
+  --color-black-10: #e5e5e5;
+  --color-black-30: #b3b3b3;
+  --color-black-40: #999999;
+  --color-black-50: #808080;
+  --color-black-60: #666666;
+  --color-black-90: #1a1a1a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--color-primary);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-ink: var(--color-ink);
+
+  --color-black-10: var(--color-black-10);
+  --color-black-30: var(--color-black-30);
+  --color-black-40: var(--color-black-40);
+  --color-black-50: var(--color-black-50);
+  --color-black-60: var(--color-black-60);
+  --color-black-90: var(--color-black-90);
+
+  --font-sans: var(--font-inter);
+
+  /* Design breakpoints from Figma: mobile 393, tablet 768, desktop 1440, wide 1920 */
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1440px;
+  --breakpoint-wide: 1920px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  letter-spacing: -0.01em; /* Inter, -1% tracking */
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-ink);
+}
+
+/* Lenis smooth-scroll setup */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis:not(.lenis-autoToggle).lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
