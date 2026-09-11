@@ -1,6 +1,17 @@
 import Container from "../Container";
 import Reveal from "../Reveal";
 import ParallaxVideo from "../ParallaxVideo";
+import AsciiField from "../AsciiField";
+
+// The hero background is hosted on ImageKit. The ?tr= transforms hand back a
+// right-sized encode of the 2752x1536 master (~0.5MB each) rather than the
+// 7.6MB original, and /ik-thumbnail.jpg pulls a still for the poster.
+const HERO_BG = "https://ik.imagekit.io/pras09jeor/animation-result.mp4";
+const heroBackground = {
+  webm: `${HERO_BG}?tr=w-1920,f-webm`,
+  mp4: `${HERO_BG}?tr=w-1920,f-mp4`,
+  poster: `${HERO_BG}/ik-thumbnail.jpg?tr=so-2,w-1600`,
+};
 
 // Same fixed pixel heights at every breakpoint per Figma (mobile doesn't
 // shrink these — it just wraps them onto more lines via flex-wrap).
@@ -22,12 +33,26 @@ export default function Hero() {
           color underneath the bottom-anchored content. Tablet+ it's full-bleed. */}
       <div className="absolute inset-x-0 top-0 -z-20 h-[73%] tablet:h-full">
         <ParallaxVideo
-          webm="/video/hero-bg.webm"
-          mp4="/video/hero-bg.mp4"
-          poster="/video/hero-poster.webp"
-          fallbackImage="/video/hero-poster.jpg"
+          webm={heroBackground.webm}
+          mp4={heroBackground.mp4}
+          poster={heroBackground.poster}
+          fallbackImage={heroBackground.poster}
           strength={18}
         />
+        {/* Textmode layer over the video: drifting characters that heat up
+            under the pointer and ripple on click. Screen-blended, so it reads
+            as light lifted off the footage rather than a flat overlay. */}
+        <AsciiField className="pointer-events-none absolute inset-0" />
+
+        {/* Same overlay treatment as the footer's — solid background colour
+            fading to 10% — but flipped: the footer fades top (solid) to
+            bottom (faint) into the section below it, so up here, where the
+            solid colour needs to sit at the *bottom* (blending the video into
+            the content underneath) fading to faint at the top (keeping the
+            video/ascii layer clear near the top of the frame), it's the same
+            gradient turned upside down. Last child in this stack, so it
+            paints over both the video and the ascii layer. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background to-background/10" />
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-b from-transparent to-background" />
 

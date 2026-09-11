@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, type MouseEvent as ReactMouseEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Container from "../Container";
 import Reveal from "../Reveal";
@@ -58,121 +58,11 @@ const cards: Card[] = [
   },
 ];
 
-/**
- * Click-and-drag horizontal scrolling for mouse users (touch/trackpad keep
- * native scroll). Skips entirely when the press starts on a button so it
- * never steals clicks — pointer capture retargets the eventual `click` to
- * whatever element captured it, which was silently swallowing the card's
- * "+" button before this fix. Also carries a little momentum on release so
- * a flick doesn't just stop dead, and hands off to CSS scroll-snap once it
- * settles.
- */
-function useDragScroll(ref: React.RefObject<HTMLDivElement | null>) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    let dragging = false;
-    let moved = false;
-    let startX = 0;
-    let startScroll = 0;
-    let lastX = 0;
-    let lastT = 0;
-    let velocity = 0; // px/ms
-    let momentumId: number | null = null;
-
-    function stopMomentum() {
-      if (momentumId !== null) {
-        cancelAnimationFrame(momentumId);
-        momentumId = null;
-      }
-    }
-
-    function onPointerDown(e: PointerEvent) {
-      if (e.pointerType !== "mouse") return;
-      if ((e.target as HTMLElement).closest("button, a")) return; // let clicks through untouched
-
-      stopMomentum();
-      dragging = true;
-      moved = false;
-      startX = lastX = e.clientX;
-      startScroll = el!.scrollLeft;
-      lastT = performance.now();
-      velocity = 0;
-      el!.style.scrollSnapType = "none";
-      el!.setPointerCapture(e.pointerId);
-    }
-
-    function onPointerMove(e: PointerEvent) {
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-      if (Math.abs(dx) > 3) moved = true;
-      el!.scrollLeft = startScroll - dx;
-
-      const now = performance.now();
-      const dt = now - lastT;
-      if (dt > 0) velocity = (e.clientX - lastX) / dt;
-      lastX = e.clientX;
-      lastT = now;
-    }
-
-    function onPointerUp() {
-      if (!dragging) return;
-      dragging = false;
-
-      if (moved) {
-        // swallow the click that follows a drag so it doesn't toggle a card open
-        const suppress = (ev: MouseEvent) => {
-          ev.stopPropagation();
-          ev.preventDefault();
-        };
-        el!.addEventListener("click", suppress, { capture: true, once: true });
-
-        // a little momentum, decaying to a stop, then let scroll-snap settle it
-        let v = velocity;
-        function glide() {
-          v *= 0.94;
-          el!.scrollLeft -= v * 16;
-          if (Math.abs(v) > 0.02) {
-            momentumId = requestAnimationFrame(glide);
-          } else {
-            momentumId = null;
-            el!.style.scrollSnapType = "";
-          }
-        }
-        if (Math.abs(v) > 0.05) {
-          momentumId = requestAnimationFrame(glide);
-        } else {
-          el!.style.scrollSnapType = "";
-        }
-      } else {
-        el!.style.scrollSnapType = "";
-      }
-    }
-
-    el.addEventListener("pointerdown", onPointerDown);
-    el.addEventListener("pointermove", onPointerMove);
-    el.addEventListener("pointerup", onPointerUp);
-    el.addEventListener("pointercancel", onPointerUp);
-
-    return () => {
-      stopMomentum();
-      el.removeEventListener("pointerdown", onPointerDown);
-      el.removeEventListener("pointermove", onPointerMove);
-      el.removeEventListener("pointerup", onPointerUp);
-      el.removeEventListener("pointercancel", onPointerUp);
-    };
-  }, [ref]);
-}
-
 export default function WalletCards() {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  useDragScroll(scrollerRef);
-
   return (
     <section id="features" className="py-20 tablet:py-28 desktop:py-32">
-      <Container className="!pr-0">
-        <Reveal from="up" className="pr-5 tablet:pr-10 desktop:pr-[220px]">
+      <Container>
+        <Reveal from="up">
           <h2 className="max-w-[560px] text-[32px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
             One wallet for every{" "}
             <span className="bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-transparent">
@@ -181,17 +71,15 @@ export default function WalletCards() {
           </h2>
         </Reveal>
 
-        <div
-          ref={scrollerRef}
-          className="mt-10 flex cursor-grab snap-x snap-proximity items-start gap-3 overflow-x-auto pr-5 pb-4 select-none active:cursor-grabbing tablet:mt-14 tablet:pr-10 desktop:pr-[220px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
+        {/* Static grid — no drag/scroll carousel. Figma's heading-to-row gap
+         * is 80px at desktop (Row starts at y=276, the heading block ends at
+         * y=196); mobile/tablet have no spec, so they follow this project's
+         * usual section-internal gap scale instead. 1 column on mobile, 2 on
+         * tablet, all 4 across on desktop — it just reflows with the
+         * viewport rather than scrolling. */}
+        <div className="mt-10 grid grid-cols-1 gap-3 tablet:mt-14 tablet:grid-cols-2 desktop:mt-[80px] desktop:grid-cols-4">
           {cards.map((card, i) => (
-            <Reveal
-              key={card.id}
-              from="up"
-              delay={i * 0.1}
-              className="w-[280px] shrink-0 snap-start tablet:w-[320px]"
-            >
+            <Reveal key={card.id} from="up" delay={i * 0.1}>
               <WalletCard card={card} />
             </Reveal>
           ))}
@@ -210,97 +98,107 @@ function WalletCard({ card }: { card: Card }) {
   }
 
   return (
-    <div
-      className="rounded-[20px] p-px"
-      style={{
-        background: "linear-gradient(to bottom, rgba(1,1,1,0.16), rgba(1,1,1,0))",
-      }}
-    >
-      <div className="relative h-[350px] overflow-hidden rounded-[19px] bg-[#171f1a]">
-        <AnimatePresence initial={false}>
-          {!open ? (
-            <motion.div
-              key="closed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/wallets/card-glow.webp"
-                alt=""
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 w-full object-cover object-bottom"
-              />
+    // Same 1px vertical-gradient outline as the DeepDive cards (white at 15%
+    // along the top edge, fading to fully transparent by the bottom) —
+    // confirmed by sampling the real Figma pixels: the border colour visibly
+    // changes top-to-bottom, it isn't the flat border get_design_context
+    // reported. Three stacked backgrounds reproduce it without a
+    // pseudo-element: the fill clipped to the padding box, the gradient
+    // clipped to the border box, and the fill again underneath so the
+    // gradient composites over the card colour rather than the page.
+    //
+    // Height steps down at narrower breakpoints (no Figma spec below
+    // desktop) — same convention as HowItWorks' stepped card heights.
+    <div className="relative h-[280px] overflow-hidden rounded-[20px] border border-transparent [background:linear-gradient(#171f1a,#171f1a)_padding-box,linear-gradient(180deg,rgba(255,255,255,0.15),rgba(255,255,255,0))_border-box,linear-gradient(#171f1a,#171f1a)_border-box] tablet:h-[320px] desktop:h-[350px]">
+      <AnimatePresence initial={false}>
+        {!open ? (
+          <motion.div
+            key="closed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0"
+          >
+            {/* Figma's "Blur effect" is a solid #C2F94B blob run through a
+             * real Gaussian blur (feGaussianBlur stdDeviation="60"), not a
+             * pre-blurred image — reproduced the same way here: a small
+             * solid-colour shape blurred by the browser, so it stays crisp
+             * at any resolution and costs nothing to store. Sized smaller
+             * than the ~254x116 visible glow and let the 60px blur expand
+             * it outward to match; the card's overflow-hidden clips the
+             * part that would otherwise spill past the bottom edge. */}
+            <div
+              className="pointer-events-none absolute bottom-[-40px] left-1/2 h-10 w-[130px] -translate-x-1/2 rounded-full bg-[#c2f94b] opacity-50 blur-[60px]"
+              aria-hidden
+            />
 
-              <div className="relative flex size-full flex-col p-4">
-                <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary-dark">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={card.icon} alt="" className="size-[18px]" />
-                </div>
-
-                <div className="mt-[35px] flex flex-col gap-1.5 pr-12">
-                  <p className="bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-sm font-medium tracking-[-0.01em] text-transparent">
-                    {card.label}
-                  </p>
-                  <p className="text-xl font-semibold tracking-[-0.01em] text-white">
-                    {card.title}
-                  </p>
-                  <p className="text-sm leading-[1.5] tracking-[-0.01em] text-black-50">
-                    {card.body}
-                  </p>
-                </div>
+            <div className="relative flex size-full flex-col gap-4 px-4 py-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary-dark">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={card.icon} alt="" className="size-[18px]" />
               </div>
 
-              {card.spark && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={card.spark}
-                  alt=""
-                  className="pointer-events-none absolute -bottom-6 left-0 w-[254px] opacity-80"
-                />
-              )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="open"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0 bg-primary"
-              style={{
-                backgroundImage:
-                  "radial-gradient(rgba(0,0,0,0.35) 1px, transparent 1px)",
-                backgroundSize: "7px 7px",
-              }}
-            >
-              <p className="size-full overflow-hidden p-4 pr-16 text-[15px] leading-[1.5] font-semibold tracking-[-0.01em] text-ink">
-                {card.expanded}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="flex flex-col gap-1.5">
+                <p className="bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-sm font-medium tracking-[-0.01em] text-transparent">
+                  {card.label}
+                </p>
+                <p className="text-l font-semibold tracking-[-0.01em] text-white">
+                  {card.title}
+                </p>
+                <p className="text-sm leading-[1.5] tracking-[-0.01em] text-black-50">
+                  {card.body}
+                </p>
+              </div>
+            </div>
 
-        <button
-          type="button"
-          onClick={handleClick}
-          aria-expanded={open}
-          aria-label={open ? `Hide details about ${card.label}` : `Show more about ${card.label}`}
-          className={`absolute right-[19px] bottom-[19px] flex size-[43px] items-center justify-center rounded-full transition hover:scale-[1.06] ${
-            open ? "bg-ink" : "bg-white/[0.12] shadow-[inset_0_-8px_6px_-4px_rgba(255,255,255,0.12)]"
-          }`}
-        >
-          <motion.img
-            src="/images/wallets/plus.svg"
-            alt=""
-            className="size-[23px]"
-            animate={{ rotate: open ? 135 : 0 }}
+            {card.spark && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={card.spark}
+                alt=""
+                className="pointer-events-none absolute -bottom-6 left-0 w-[254px] opacity-80"
+              />
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="open"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </button>
-      </div>
+            className="absolute inset-0 bg-primary"
+            style={{
+              backgroundImage:
+                "radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)",
+              backgroundSize: "7px 7px",
+            }}
+          >
+            <p className="size-full overflow-hidden p-4 text-[15px] leading-[1.5] font-semibold tracking-[-0.01em] text-ink">
+              {card.expanded}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-expanded={open}
+        aria-label={open ? `Hide details about ${card.label}` : `Show more about ${card.label}`}
+        className={`absolute right-5 bottom-5 flex size-[43px] items-center justify-center rounded-full transition hover:scale-[1.06] ${
+          open ? "bg-ink" : "bg-white/[0.12] shadow-[inset_0_-8px_6px_-4px_rgba(255,255,255,0.12)]"
+        }`}
+      >
+        <motion.img
+          src="/images/wallets/plus.svg"
+          alt=""
+          className="size-[23px]"
+          animate={{ rotate: open ? 135 : 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </button>
     </div>
   );
 }
