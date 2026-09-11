@@ -24,7 +24,7 @@ const cards: Card[] = [
     title: "Your starting point.",
     body: "Deposit, withdraw, and manage your available funds from one central wallet.",
     expanded:
-      "Every deposit and withdrawal starts here. Fund your Main Wallet first, then move money into whichever trading wallet you need — Spot, Perps, or Prediction — in a couple of taps. Transfers between your own Aimo wallets are instant and free, so you can keep your Main Wallet as a holding area and only allocate funds when you're ready to use them.",
+      "Every deposit and withdrawal starts here. Fund your Main Wallet first, then move money into whichever trading wallet you need. Spot, Perps, or Prediction in a couple of taps. Transfers between your own Aimo wallets are instant and free, so you can keep your Main Wallet as a holding area and only allocate funds when you're ready to use them.",
   },
   {
     id: "spot",
@@ -34,7 +34,7 @@ const cards: Card[] = [
     title: "For your everyday crypto.",
     body: "Keep your spot assets organised and ready to trade.",
     expanded:
-      "Buy, hold, and sell any listed asset without it getting tangled up in your leveraged or prediction positions. Balances update in real time, transfers to and from your other wallets are instant, and your full trade history stays in one place — so your everyday holdings are always easy to find and easy to move.",
+      "Buy, hold, and sell any listed asset without it getting tangled up in your leveraged or prediction positions. Balances update in real time, transfers to and from your other wallets are instant, and your full trade history stays in one place so your everyday holdings are always easy to find and easy to move.",
   },
   {
     id: "perps",
@@ -44,7 +44,7 @@ const cards: Card[] = [
     title: "For leveraged positions.",
     body: "Keep your perpetual trading funds separate from the rest of your portfolio.",
     expanded:
-      "Isolated margin means the funds you put at risk stay contained to this wallet — a bad trade here can't touch your spot holdings. Fund it with only what you're willing to leverage, track PnL separately from the rest of your portfolio, and move the rest back to your Main Wallet whenever you like.",
+      "Isolated margin means the funds you put at risk stay contained to this wallet a bad trade here can't touch your spot holdings. Fund it with only what you're willing to leverage, track PnL separately from the rest of your portfolio, and move the rest back to your Main Wallet whenever you like.",
   },
   {
     id: "prediction",
@@ -54,7 +54,7 @@ const cards: Card[] = [
     title: "For your predictions.",
     body: "Set aside funds for prediction markets without mixing them with your other positions.",
     expanded:
-      "Keep the money you're using for prediction markets ring-fenced from your spot and leveraged trading. Positions resolve and settle independently, withdrawals don't touch your other wallets, and you can top this one up — or drain it — in a couple of taps whenever your outlook changes.",
+      "Keep the money you're using for prediction markets ring-fenced from your spot and leveraged trading. Positions resolve and settle independently, withdrawals don't touch your other wallets, and you can top this one up or drain it in a couple of taps whenever your outlook changes.",
   },
 ];
 

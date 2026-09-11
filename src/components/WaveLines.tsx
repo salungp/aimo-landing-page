@@ -13,15 +13,26 @@ type WaveLinesProps = {
   opacity?: number;
 };
 
-// Per-strand ripple parameters — small, so the animated shape stays close to
-// the rest pose, and varied enough that all 50 strands don't wave in lockstep.
+// Per-strand motion: a slow, broad "sway" (the whole strand rising and
+// falling) plus a faster, much finer "ripple" riding on top of it. The 50
+// strands are stacked in vertical order (top to bottom), so letting each one
+// sway on its own phase/frequency made neighbours cross and read as tangled
+// cable rather than a bundle waving together. Instead every strand shares one
+// sway frequency and speed, staggered only by a small phase offset tied to
+// its stacking order — that reads as a single wave passing through the
+// bundle top-to-bottom, the strands stay in relative order, and the ripple
+// stays small enough to add texture without introducing new crossings.
 const RIPPLE = WAVE_LINES.map((_, i) => {
   const rnd = mulberry32(2024 + i);
   return {
-    amp: 0.006 + rnd() * 0.01, // fraction of frame height
-    freq: 1.2 + rnd() * 1.6, // ripple cycles across the strand's width
-    phase: rnd() * Math.PI * 2,
-    rate: 0.28 + rnd() * 0.3, // per-strand speed multiplier
+    swayAmp: 0.01 + rnd() * 0.006, // fraction of frame height
+    swayFreq: 0.75, // shared — keeps strands moving together
+    swayPhase: i * 0.1 + rnd() * 0.15, // stacking-order stagger, wave travels through the bundle
+    swayRate: 0.2,
+    rippleAmp: 0.003 + rnd() * 0.004,
+    rippleFreq: 2 + rnd() * 1.2,
+    ripplePhase: rnd() * Math.PI * 2,
+    rippleRate: 0.45 + rnd() * 0.3,
   };
 });
 
@@ -46,10 +57,12 @@ function mulberry32(seed: number) {
  * strands overlapping, reproduced here by normal alpha compositing rather
  * than hand-picked bold lines.
  *
- * A small per-strand sine ripple is layered on top of the rest shape so the
- * bundle keeps waving in a smooth, seamless loop (a continuously advancing
- * phase, not a resetting CSS keyframe) instead of sitting frozen — the
- * amplitude is kept small enough that the silhouette stays true to Figma.
+ * A shared sway (broad, slow, staggered by stacking order so it reads as one
+ * wave passing through the bundle) plus a small per-strand ripple (finer,
+ * faster) is layered on top of the rest shape so the bundle keeps waving in a
+ * smooth, seamless loop (a continuously advancing phase, not a resetting CSS
+ * keyframe) instead of sitting frozen — kept coherent and gentle enough that
+ * strands don't cross each other into a tangle.
  *
  * Same lifecycle discipline as AsciiField/HalftoneField: pause off-screen or
  * in a hidden tab, and hold a single static frame under reduced motion.
@@ -57,7 +70,7 @@ function mulberry32(seed: number) {
 export default function WaveLines({
   className,
   color = "#a7f932",
-  speed = 22,
+  speed = 26,
   opacity = 1,
 }: WaveLinesProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -134,12 +147,17 @@ export default function WaveLines({
         for (let j = 0; j <= lastPt; j++) {
           // Figma mirrors this whole bundle horizontally (-scale-x-100), so
           // the source data's x fraction is flipped to match.
+          const nx = j / lastPt;
           const x = (1 - WAVE_XS[j]) * w;
-          const ripple =
-            Math.sin((j / lastPt) * rp.freq * Math.PI * 2 + rp.phase + t * rp.rate) *
-            rp.amp *
+          const sway =
+            Math.sin(nx * rp.swayFreq * Math.PI * 2 + rp.swayPhase + t * rp.swayRate) *
+            rp.swayAmp *
             h;
-          const y = ys[j] * h + ripple;
+          const ripple =
+            Math.sin(nx * rp.rippleFreq * Math.PI * 2 + rp.ripplePhase + t * rp.rippleRate) *
+            rp.rippleAmp *
+            h;
+          const y = ys[j] * h + sway + ripple;
           if (j === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }

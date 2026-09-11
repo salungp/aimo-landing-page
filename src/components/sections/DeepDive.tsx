@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import Container from "../Container";
+import DeepDiveField from "../DeepDiveField";
 import LoopVideo from "../LoopVideo";
 import Reveal from "../Reveal";
 import WaveLines from "../WaveLines";
@@ -44,11 +45,7 @@ export default function DeepDive() {
 
   return (
     <section className="relative isolate overflow-hidden py-[60px] tablet:py-28 desktop:py-[94px]">
-      <LoopVideo
-        mp4="/video/deepdive-bg-original.mp4"
-        poster="/video/deepdive-bg-poster.webp"
-        className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
-      />
+      <DeepDiveField className="pointer-events-none absolute inset-0 -z-10 size-full" />
 
       <Container>
         <div className="flex flex-col gap-3">
