@@ -1,18 +1,13 @@
 import Container from "../Container";
 import Reveal from "../Reveal";
-import LoopVideo from "../LoopVideo";
+import MarketsAnimation from "../markets-animation/MarketsAnimation";
 
 export default function MarketsTogether() {
   return (
     <section className="overflow-hidden py-20 tablet:py-28 desktop:py-32">
       <Reveal from="none" duration={1} amount={0.15}>
         <div className="relative mx-auto aspect-[2200/888] w-full max-w-[1100px]">
-          <LoopVideo
-            webm="/video/network-diagram.webm"
-            mp4="/video/network-diagram.mp4"
-            poster="/video/network-diagram-poster.webp"
-            className="size-full object-contain"
-          />
+          <MarketsAnimation className="size-full" />
         </div>
       </Reveal>
 

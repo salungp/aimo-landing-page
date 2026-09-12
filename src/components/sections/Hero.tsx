@@ -45,14 +45,15 @@ export default function Hero() {
         <AsciiField className="pointer-events-none absolute inset-0" />
 
         {/* Same overlay treatment as the footer's — solid background colour
-            fading to 10% — but flipped: the footer fades top (solid) to
-            bottom (faint) into the section below it, so up here, where the
-            solid colour needs to sit at the *bottom* (blending the video into
-            the content underneath) fading to faint at the top (keeping the
-            video/ascii layer clear near the top of the frame), it's the same
-            gradient turned upside down. Last child in this stack, so it
-            paints over both the video and the ascii layer. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background to-background/10" />
+            fading to fully transparent — but flipped: the footer fades top
+            (solid) to bottom (clear) into the section below it, so up here,
+            where the solid colour needs to sit at the *bottom* (blending the
+            video into the content underneath) fading to zero opacity at the
+            top (keeping the video/ascii layer fully clear near the top of
+            the frame), it's the same gradient turned upside down. Last child
+            in this stack, so it paints over both the video and the ascii
+            layer. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background to-transparent" />
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-b from-transparent to-background" />
 
