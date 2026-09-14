@@ -11,7 +11,7 @@ const steps: Step[] = [
   {
     number: "01",
     title: "Sign up",
-    body: "Create your Aimo account.",
+    body: "Create your AIMO account.",
   },
   {
     number: "02",

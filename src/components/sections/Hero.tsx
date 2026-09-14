@@ -3,15 +3,28 @@ import Reveal from "../Reveal";
 import ParallaxVideo from "../ParallaxVideo";
 import AsciiField from "../AsciiField";
 
-// The hero background is hosted on ImageKit. The ?tr= transforms hand back a
-// right-sized encode of the 2752x1536 master (~0.5MB each) rather than the
-// 7.6MB original, and /ik-thumbnail.jpg pulls a still for the poster.
-const HERO_BG = "https://ik.imagekit.io/pras09jeor/animation-result.mp4";
-const heroBackground = {
-  webm: `${HERO_BG}?tr=w-1920,f-webm`,
-  mp4: `${HERO_BG}?tr=w-1920,f-mp4`,
-  poster: `${HERO_BG}/ik-thumbnail.jpg?tr=so-2,w-1600`,
-};
+// Built from 5.25s-9.29s of the source clip. That window is where the vortex
+// comes back around closest to its own start — found by scoring every frame
+// pair in the 20s source for pixel error, which also showed the footage has
+// no periodicity at all: best-achievable error rises dead-linearly with loop
+// length (~8.4 mse per second, against ~80 for a pair of unrelated frames).
+// So seam quality and repeat interval trade off directly, and no trim can
+// win both.
+//
+// They're decoupled here instead: seam quality is set by the *frame* gap,
+// repeat interval by wall-clock duration. The 4s window is motion-
+// interpolated to 48fps (ffmpeg `minterpolate`) and played back at half
+// speed, giving an 8s interval off a 4s frame gap — the longer interval
+// costs nothing at the seam. What's left is covered by crossfading the last
+// second back into the first.
+//
+// Two dead ends worth not repeating: a tighter 2s window scores a better
+// seam (mse 5.5) but reads as an obvious repeat, and upscaling the 720p
+// master to 1080p just resamples the same detail while adding ringing on
+// the bright swirl — this stays at the source's native resolution.
+const HERO_BG_MP4 = "/video/hero-bg-loop.mp4";
+const HERO_BG_WEBM = "/video/hero-bg-loop.webm";
+const HERO_BG_POSTER = "/video/hero-bg-loop-poster.webp";
 
 // Same fixed pixel heights at every breakpoint per Figma (mobile doesn't
 // shrink these — it just wraps them onto more lines via flex-wrap).
@@ -33,10 +46,10 @@ export default function Hero() {
           color underneath the bottom-anchored content. Tablet+ it's full-bleed. */}
       <div className="absolute inset-x-0 top-0 -z-20 h-[73%] tablet:h-full">
         <ParallaxVideo
-          webm={heroBackground.webm}
-          mp4={heroBackground.mp4}
-          poster={heroBackground.poster}
-          fallbackImage={heroBackground.poster}
+          webm={HERO_BG_WEBM}
+          mp4={HERO_BG_MP4}
+          poster={HERO_BG_POSTER}
+          fallbackImage={HERO_BG_POSTER}
           strength={18}
         />
         {/* Textmode layer over the video: drifting characters that heat up

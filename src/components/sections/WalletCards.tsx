@@ -24,7 +24,7 @@ const cards: Card[] = [
     title: "Your starting point.",
     body: "Deposit, withdraw, and manage your available funds from one central wallet.",
     expanded:
-      "Every deposit and withdrawal starts here. Fund your Main Wallet first, then move money into whichever trading wallet you need. Spot, Perps, or Prediction in a couple of taps. Transfers between your own Aimo wallets are instant and free, so you can keep your Main Wallet as a holding area and only allocate funds when you're ready to use them.",
+      "Every deposit and withdrawal starts here. Fund your Main Wallet first, then move money into whichever trading wallet you need. Spot, Perps, or Prediction in a couple of taps. Transfers between your own AIMO wallets are instant and free, so you can keep your Main Wallet as a holding area and only allocate funds when you're ready to use them.",
   },
   {
     id: "spot",

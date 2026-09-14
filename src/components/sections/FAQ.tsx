@@ -14,19 +14,19 @@ type Item = {
 // language (see WalletCards.tsx) — swap in the real answers when available.
 const items: Item[] = [
   {
-    question: "How does Aimo work?",
+    question: "How does AIMO work?",
     answer:
-      "Aimo gives you one account with dedicated wallets for spot, perps, and predictions, all connected so you can move funds between them in a couple of taps without leaving the app.",
+      "AIMO gives you one account with dedicated wallets for spot, perps, and predictions, all connected so you can move funds between them in a couple of taps without leaving the app.",
   },
   {
-    question: "Why does Aimo have multiple wallets?",
+    question: "Why does AIMO have multiple wallets?",
     answer:
       "Keeping spot, perps, and prediction funds separate means a bad trade in one market can't touch the money you've set aside for another. Your Main Wallet holds funds until you're ready to allocate them.",
   },
   {
     question: "Can I move funds between wallets?",
     answer:
-      "Yes. Transfers between your own Aimo wallets are instant and free — move money from your Main Wallet into Spot, Perps, or Prediction whenever you need it.",
+      "Yes. Transfers between your own AIMO wallets are instant and free — move money from your Main Wallet into Spot, Perps, or Prediction whenever you need it.",
   },
   {
     question: "Can I deposit directly into every wallet?",
@@ -34,14 +34,14 @@ const items: Item[] = [
       "Deposits land in your Main Wallet first. From there you can split funds across your other wallets in a couple of taps, so your Main Wallet stays your single source of truth.",
   },
   {
-    question: "What can I trade on Aimo?",
+    question: "What can I trade on AIMO?",
     answer:
       "Spot assets, leveraged perpetuals, and prediction markets — all from one account, with balances and performance tracked separately for each.",
   },
   {
-    question: "Is Aimo available on mobile?",
+    question: "Is AIMO available on mobile?",
     answer:
-      "Aimo is fully responsive and works in any modern mobile browser, with a dedicated app on the way.",
+      "AIMO is fully responsive and works in any modern mobile browser, with a dedicated app on the way.",
   },
   {
     question: "How do I withdraw?",
@@ -51,7 +51,7 @@ const items: Item[] = [
   {
     question: "What are the fees?",
     answer:
-      "Aimo charges standard network fees for withdrawals and on-chain transfers. Trading fees vary by market and are always shown before you confirm a trade.",
+      "AIMO charges standard network fees for withdrawals and on-chain transfers. Trading fees vary by market and are always shown before you confirm a trade.",
   },
 ];
 

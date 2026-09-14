@@ -78,7 +78,7 @@ function CtaBanner() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/footer/phone-mockup.webp"
-          alt="The Aimo app open to a portfolio view, held in a hand"
+          alt="The AIMO app open to a portfolio view, held in a hand"
           className="size-full object-cover"
         />
       </Reveal>
@@ -96,7 +96,7 @@ function CtaBanner() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/footer/phone-mockup.webp"
-            alt="The Aimo app open to a portfolio view, held in a hand"
+            alt="The AIMO app open to a portfolio view, held in a hand"
             className="size-full object-cover"
           />
         </Reveal>
@@ -121,7 +121,7 @@ function CtaCopy() {
         One place to hold it.
       </h2>
       <p className="text-sm leading-[1.5] tracking-[-0.01em] text-ink/70">
-        Multiple markets. Connected wallets. One Aimo.
+        Multiple markets. Connected wallets. One AIMO.
       </p>
     </div>
   );
@@ -151,7 +151,7 @@ function FooterContent() {
       <div className="flex flex-col gap-10 tablet:hidden">
         <div className="flex flex-col items-start gap-5">
           <div className="flex flex-col items-start gap-[25px]">
-            <Image src={logo} alt="Aimo" className="h-[27px] w-auto" />
+            <Image src={logo} alt="AIMO" className="h-[27px] w-auto" />
             <p className="text-sm leading-[1.5] tracking-[-0.01em] text-white">
               Everything you trade. One place to hold it.
             </p>
@@ -165,7 +165,7 @@ function FooterContent() {
       <div className="hidden flex-col gap-16 tablet:flex desktop:gap-[100px]">
         <div className="flex items-start justify-between">
           <div className="flex flex-col items-start gap-[25px]">
-            <Image src={logo} alt="Aimo" className="h-[27px] w-auto" />
+            <Image src={logo} alt="AIMO" className="h-[27px] w-auto" />
             <p className="text-sm leading-[1.5] tracking-[-0.01em] text-white">
               Everything you trade. One place to hold it.
             </p>

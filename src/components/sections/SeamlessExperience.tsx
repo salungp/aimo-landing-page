@@ -125,7 +125,7 @@ export default function SeamlessExperience() {
             </h2>
             <p className="text-base leading-[1.5] text-black-30 tablet:text-lg desktop:text-xl">
               Keep your funds organised around how you trade. Move money
-              between wallets whenever you need it without leaving Aimo.
+              between wallets whenever you need it without leaving AIMO.
             </p>
           </div>
         </Reveal>

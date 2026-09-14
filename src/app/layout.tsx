@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aimo — One grip for everything you trade",
+  title: "AIMO — One grip for everything you trade",
   description:
     "Trade across spot, perps, predictions, and outcomes with dedicated wallets that stay connected in one place.",
 };

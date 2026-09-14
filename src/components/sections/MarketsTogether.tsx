@@ -21,7 +21,7 @@ export default function MarketsTogether() {
               </span>
             </h2>
             <p className="text-base leading-[1.5] text-black-40 tablet:text-lg desktop:text-xl">
-              Aimo brings your trading experience together, so you can move,
+              AIMO brings your trading experience together, so you can move,
               trade and track everything without constantly switching between
               platforms.
             </p>
