@@ -37,26 +37,40 @@ type AsciiFieldProps = {
 };
 
 const FIELD_OPTIONS = {
-  ramp: "  ..::--==++**@@@@",
-  cell: 8,
-  speed: 65,
-  scale: 52,
-  coverage: 53,
-  radius: 18,
-  trail: 34,
+  ramp: " .`':;|",
+  cell: 15,
+  speed: 58,
+  scale: 70,
+  coverage: 60,
+  radius: 26,
+  trail: 62,
   hover: "ripple",
-  accent: "#8CE85A",
-  accentHot: "#EAFFB8",
-  dim: "#252D28",
-  bright: "#B3C8B9",
+  // Brighter than the original export for more contrast over the video:
+  // the sparse end was near-black (#252D28) and vanished under screen blend.
+  // More light per glyph comes from a heavier weight (see fontWeight below)
+  // rather than a glow filter, which doubled frame cost for little gain.
+  accent: "#A7F932",
+  accentHot: "#F4FFDC",
+  dim: "#4A7F3A",
+  bright: "#F4FBEA",
+  // Resting colour per density level, sparse -> dense (exactly 6, one per
+  // engine level). Overrides the dim -> bright blend.
+  levels: ["#4A7F3A", "#5FA200", "#79CC02", "#A7F932", "#D5FAA1", "#F4FBEA"],
   // A CSS custom property name is resolved at runtime, so this picks up
   // next/font automatically. A plain font stack works too.
   fontFamily: "--font-jetbrains-mono",
+  // JetBrains Mono is loaded as a variable font, so 700 is a real weight
+  // (not synthesised) — thickens the thin ramp glyphs ` . ' : ; |`.
+  fontWeight: 700,
+  // Slightly tighter grid than the engine default (1 / 1.32) so the glyphs
+  // read as a denser texture rather than spaced-out marks.
+  tracking: 0.85,
+  lineHeight: 1.12,
 };
 
 export default function AsciiField({
   className,
-  opacity = 0.6,
+  opacity = 1,
   blend = "screen",
   centerFade = true,
   options,

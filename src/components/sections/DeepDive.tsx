@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
 import Container from "../Container";
 import DeepDiveField from "../DeepDiveField";
 import LoopVideo from "../LoopVideo";
@@ -41,8 +40,6 @@ const badges: {
 ];
 
 export default function DeepDive() {
-  const parallaxRef = usePointerParallax(18);
-
   return (
     <section className="relative isolate overflow-hidden py-[60px] tablet:py-28 desktop:py-[94px]">
       <DeepDiveField className="pointer-events-none absolute inset-0 -z-10 size-full" />
@@ -82,10 +79,7 @@ export default function DeepDive() {
 
           {/* Transparency — full width */}
           <Reveal from="up" delay={0.16} className={cardClass}>
-            <div
-              ref={parallaxRef}
-              className="relative mt-px h-[168px] overflow-hidden tablet:mt-0 tablet:h-[249px]"
-            >
+            <div className="relative mt-px h-[168px] overflow-hidden tablet:mt-0 tablet:h-[249px]">
               <WaveLines className="pointer-events-none absolute -top-px -left-px h-full w-[580px] max-w-none tablet:inset-0 tablet:size-full" />
               {badges.map((b, i) => (
                 <Reveal
@@ -125,12 +119,7 @@ export default function DeepDive() {
 }
 
 function FloatingBadge({ label, index }: { label: string; index: number }) {
-  // Two layers: the idle drift owns `y` on the outer element, while the inner
-  // one carries the pointer parallax — driven by the --px/--py custom properties
-  // the card sets, so following the mouse costs no React re-renders. Each badge
-  // gets its own depth factor so they don't all slide as one flat sheet.
-  const depth = 0.55 + (index % 3) * 0.28;
-
+  // Idle drift only — each badge bobs on its own slightly different cycle.
   return (
     <motion.div
       style={{
@@ -152,8 +141,6 @@ function FloatingBadge({ label, index }: { label: string; index: number }) {
         style={{
           background:
             "linear-gradient(to bottom, rgba(194,249,75,0.1), rgba(194,249,75,0.06))",
-          transform: `translate3d(calc(var(--px, 0) * ${depth}px), calc(var(--py, 0) * ${depth}px), 0)`,
-          willChange: "transform",
         }}
       >
         <span className="size-1.5 shrink-0 rounded-full bg-primary" />
@@ -163,56 +150,6 @@ function FloatingBadge({ label, index }: { label: string; index: number }) {
       </div>
     </motion.div>
   );
-}
-
-/** Sets --px/--py on the wrapper from the pointer position, lerped each frame
- * so the badges ease toward the cursor instead of snapping to it. Same approach
- * as ParallaxVideo; off for reduced-motion and coarse pointers. */
-function usePointerParallax(strength: number) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
-    if (reduceMotion || !hasFinePointer) return;
-
-    let targetX = 0;
-    let targetY = 0;
-    let currentX = 0;
-    let currentY = 0;
-    let rafId: number;
-
-    function onPointerMove(e: PointerEvent) {
-      const rect = el!.getBoundingClientRect();
-      const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5..0.5
-      const ny = (e.clientY - rect.top) / rect.height - 0.5;
-      targetX = nx * strength;
-      targetY = ny * strength;
-    }
-
-    function tick() {
-      currentX += (targetX - currentX) * 0.06;
-      currentY += (targetY - currentY) * 0.06;
-      el!.style.setProperty("--px", currentX.toFixed(2));
-      el!.style.setProperty("--py", currentY.toFixed(2));
-      rafId = requestAnimationFrame(tick);
-    }
-
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    rafId = requestAnimationFrame(tick);
-
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      cancelAnimationFrame(rafId);
-    };
-  }, [strength]);
-
-  return ref;
 }
 
 function PerformanceIllustration() {

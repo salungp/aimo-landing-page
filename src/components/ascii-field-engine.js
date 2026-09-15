@@ -1,4 +1,3 @@
-/* ── file: src/components/ascii-field-engine.js ─────────────────────── */
 // Vendored generative code: plain JS on purpose, so strict TypeScript
 // never has to type a hot render loop. tsconfig's `include` skips .js,
 // and `allowJs` lets the bundler pick it up.
@@ -21,10 +20,14 @@ function createAsciiField(canvas, options) {
     hover: "bloom",    // bloom | ripple | crosshair | scramble | repel
     dim: "#252D28",    // resting field, sparse end
     bright: "#B3C8B9", // resting field, dense end
+    levels: null,      // optional 6 hex colours, sparse -> dense; overrides dim/bright blending
     accent: "#FF5A2B", // pointer glow
     accentHot: "#FFC46B",
     background: null,  // null keeps the canvas transparent
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+    fontWeight: 400,   // heavier weights put more light into thin glyphs
+    tracking: 1,       // column width as a multiple of the glyph advance (<1 packs tighter)
+    lineHeight: 1.32,  // row height as a multiple of the cell size
     maxDpr: 2,
     clickRipples: true
   };
@@ -82,14 +85,17 @@ function createAsciiField(canvas, options) {
     return [a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m];
   }
   function buildLut() {
-    var key = o.dim + o.bright + o.accent + o.accentHot;
+    var key = o.dim + o.bright + o.accent + o.accentHot + (o.levels ? o.levels.join("") : "");
     if (key === lutKey) return;
     lutKey = key;
     var lo = hex2rgb(o.dim), hi = hex2rgb(o.bright);
     var acc = hex2rgb(o.accent), hot = hex2rgb(o.accentHot);
     lut = [];
     for (var s = 0; s < BASE_LEVELS; s++) {
-      var base = mix(lo, hi, Math.pow(s / (BASE_LEVELS - 1), 0.85));
+      // Explicit per-level colours win; otherwise interpolate dim -> bright.
+      var base = o.levels && o.levels[s]
+        ? hex2rgb(o.levels[s])
+        : mix(lo, hi, Math.pow(s / (BASE_LEVELS - 1), 0.85));
       for (var h = 0; h < HEAT_LEVELS; h++) {
         var m = h / (HEAT_LEVELS - 1);
         var target = mix(acc, hot, Math.max(0, (m - 0.62) / 0.38));
@@ -120,11 +126,11 @@ function createAsciiField(canvas, options) {
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.font = o.cell + "px " + fontFamily;
+    ctx.font = o.fontWeight + " " + o.cell + "px " + fontFamily;
     ctx.textBaseline = "middle";
     measuredCell = o.cell;
-    cw = ctx.measureText("M").width || o.cell * 0.6;
-    ch = Math.round(o.cell * 1.32);
+    cw = (ctx.measureText("M").width || o.cell * 0.6) * o.tracking;
+    ch = Math.round(o.cell * o.lineHeight);
     aspect = ch / cw;
     cols = Math.ceil(w / cw) + 1;
     rows = Math.ceil(h / ch) + 1;

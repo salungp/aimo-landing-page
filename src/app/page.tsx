@@ -5,6 +5,7 @@ import WalletCards from "@/components/sections/WalletCards";
 import MarketsTogether from "@/components/sections/MarketsTogether";
 import DeepDive from "@/components/sections/DeepDive";
 import HowItWorks from "@/components/sections/HowItWorks";
+import OneBalance from "@/components/sections/OneBalance";
 import FAQ from "@/components/sections/FAQ";
 import Footer from "@/components/sections/Footer";
 
@@ -19,6 +20,7 @@ export default function Home() {
         <MarketsTogether />
         <DeepDive />
         <HowItWorks />
+        <OneBalance />
         <FAQ />
       </main>
       <Footer />

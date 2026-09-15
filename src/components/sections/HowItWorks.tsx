@@ -1,5 +1,6 @@
 import Container from "../Container";
 import Reveal from "../Reveal";
+import TitleReveal from "../TitleReveal";
 
 type Step = {
   number: string;
@@ -34,7 +35,7 @@ export default function HowItWorks() {
   return (
     <section id="how-it-works" className="py-20 tablet:py-28 desktop:py-20">
       <Container>
-        <Reveal from="up">
+        <TitleReveal>
           <h2 className="max-w-[560px] text-[32px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:max-w-none tablet:text-[40px] desktop:text-[48px]">
             Start with{" "}
             <span className="bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-transparent">
@@ -42,7 +43,7 @@ export default function HowItWorks() {
             </span>{" "}
             Grow into every market.
           </h2>
-        </Reveal>
+        </TitleReveal>
 
         <div className="mt-10 grid grid-cols-1 gap-3 tablet:mt-14 tablet:grid-cols-2 desktop:mt-[50px] desktop:grid-cols-4">
           {steps.map((step, i) => (

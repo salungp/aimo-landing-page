@@ -1,6 +1,7 @@
 import Container from "../Container";
 import Reveal from "../Reveal";
-import ParallaxVideo from "../ParallaxVideo";
+import TitleReveal from "../TitleReveal";
+import LoopVideo from "../LoopVideo";
 import AsciiField from "../AsciiField";
 
 // Built from 5.25s-9.29s of the source clip. That window is where the vortex
@@ -45,49 +46,51 @@ export default function Hero() {
           the design), not the full height — the rest is plain background
           color underneath the bottom-anchored content. Tablet+ it's full-bleed. */}
       <div className="absolute inset-x-0 top-0 -z-20 h-[73%] tablet:h-full">
-        <ParallaxVideo
-          webm={HERO_BG_WEBM}
-          mp4={HERO_BG_MP4}
-          poster={HERO_BG_POSTER}
-          fallbackImage={HERO_BG_POSTER}
-          strength={18}
-        />
-        {/* Textmode layer over the video: drifting characters that heat up
-            under the pointer and ripple on click. Screen-blended, so it reads
+        {/* Static (no mouse parallax). The poster doubles as a painted
+            fallback behind the video while it loads. */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${HERO_BG_POSTER})` }}
+        >
+          <LoopVideo
+            webm={HERO_BG_WEBM}
+            mp4={HERO_BG_MP4}
+            poster={HERO_BG_POSTER}
+            className="absolute inset-0 size-full object-cover"
+          />
+        </div>
+        {/* Textmode layer over the video: drifting characters that send out
+            ripples under the pointer and on click. Screen-blended, so it reads
             as light lifted off the footage rather than a flat overlay. */}
         <AsciiField className="pointer-events-none absolute inset-0" />
 
-        {/* Same overlay treatment as the footer's — solid background colour
-            fading to fully transparent — but flipped: the footer fades top
-            (solid) to bottom (clear) into the section below it, so up here,
-            where the solid colour needs to sit at the *bottom* (blending the
-            video into the content underneath) fading to zero opacity at the
-            top (keeping the video/ascii layer fully clear near the top of
-            the frame), it's the same gradient turned upside down. Last child
-            in this stack, so it paints over both the video and the ascii
-            layer. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+        {/* Overlay from Figma (213:2561): the page background colour fading
+            in from fully transparent at the top to solid by 75.54% of the
+            height, so the video/ascii layer stays clear up top and melts into
+            the content below. Last child in this stack, so it paints over
+            both the video and the ascii layer. */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(5,19,10,0)_0%,var(--background)_75.54%)]" />
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-b from-transparent to-background" />
 
       <div className="flex flex-1 flex-col justify-end pt-32 pb-8 tablet:justify-center tablet:pt-56 tablet:pb-24">
         <Container>
           <div className="mx-auto flex max-w-[820px] flex-col items-center gap-8 text-center tablet:gap-10">
-            <Reveal from="up" delay={0}>
+            <TitleReveal>
               <h1 className="text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] text-white tablet:text-[46px] desktop:text-[56px]">
                 <span className="block">One grip for</span>
                 <span className="block">
                   <span className="text-primary">everything</span> you trade.
                 </span>
               </h1>
-            </Reveal>
+            </TitleReveal>
 
-            <Reveal from="up" delay={0.12}>
+            <TitleReveal delay={0.12}>
               <p className="max-w-[640px] text-base leading-[1.5] text-white/60 tablet:text-lg desktop:text-xl">
                 Trade across spot, perps, predictions, and outcomes with
                 dedicated wallets that stay connected in one place.
               </p>
-            </Reveal>
+            </TitleReveal>
 
             <Reveal from="up" delay={0.22}>
               <a

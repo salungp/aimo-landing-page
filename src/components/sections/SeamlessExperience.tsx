@@ -3,6 +3,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import Container from "../Container";
 import Reveal from "../Reveal";
+import TitleReveal from "../TitleReveal";
 
 type BubbleIcon = {
   id: string;
@@ -118,17 +119,19 @@ export default function SeamlessExperience() {
       </div>
 
       <Container>
-        <Reveal from="up" delay={0.1}>
-          <div className="mx-auto mt-10 flex max-w-[720px] flex-col items-center gap-3 text-center tablet:-mt-[6vw]">
+        <div className="mx-auto mt-10 flex max-w-[720px] flex-col items-center gap-3 text-center tablet:-mt-[6vw]">
+          <TitleReveal>
             <h2 className="text-[36px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
               One <span className="text-primary">seamless</span> experience.
             </h2>
+          </TitleReveal>
+          <TitleReveal delay={0.12}>
             <p className="text-base leading-[1.5] text-black-30 tablet:text-lg desktop:text-xl">
               Keep your funds organised around how you trade. Move money
               between wallets whenever you need it without leaving AIMO.
             </p>
-          </div>
-        </Reveal>
+          </TitleReveal>
+        </div>
       </Container>
     </section>
   );
