@@ -1,13 +1,11 @@
 import Container from "../Container";
-import ScrollScrubVideo from "../ScrollScrubVideo";
+import InViewVideo from "../InViewVideo";
 import TitleReveal from "../TitleReveal";
 
 export default function MarketsTogether() {
   return (
-    // overflow-x-clip, not overflow-hidden: hidden would make the section a
-    // scroll container and stop the video stage inside it from sticking.
-    <section className="overflow-x-clip pb-20 tablet:pb-28 desktop:pb-32">
-      <ScrollScrubVideo
+    <section className="overflow-x-clip py-20 tablet:py-28 desktop:py-32">
+      <InViewVideo
         desktop={{
           mp4: "/video/markets-scroll-desktop.mp4",
           poster: "/video/markets-scroll-desktop-poster.jpg",

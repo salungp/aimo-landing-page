@@ -26,8 +26,8 @@ type Line = { top: number; height: number; left: number; width: number };
 /**
  * Scroll-driven text fill: the paragraph pins to the viewport while a tall
  * track scrolls past, and a green sweep runs through it letter by letter in
- * reading order — same pinned-track pattern as ScrollScrubVideo, with the
- * scroll distance acting as the "playhead".
+ * reading order — the scroll distance through the pinned track acts as the
+ * "playhead".
  *
  * Built to never repaint while scrolling. The grey paragraph and a green copy
  * are each painted once; per line, the green copy sits in a band that is
