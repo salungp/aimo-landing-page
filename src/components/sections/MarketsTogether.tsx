@@ -1,6 +1,5 @@
 import Container from "../Container";
 import InViewLottie from "../InViewLottie";
-import InViewVideo from "../InViewVideo";
 import TitleReveal from "../TitleReveal";
 
 export default function MarketsTogether() {
@@ -13,18 +12,11 @@ export default function MarketsTogether() {
     <section className="overflow-x-clip">
       <div className="relative h-[150vh]">
       <div className="sticky top-0 flex h-svh items-center justify-center">
-      {/* Mobile: the portrait video, unchanged. Hidden from tablet up — a
-          display:none element never intersects the viewport, so its file is
-          never fetched there. */}
+      {/* Mobile: the portrait Lottie scene (Scene-6, 574 × 1241). Hidden from
+          tablet up — a display:none element never intersects the viewport, so
+          its file is never fetched there. */}
       <div className="w-full tablet:hidden">
-        <InViewVideo
-          desktop={{
-            mp4: "/video/markets-scroll-mobile.mp4",
-            poster: "/video/markets-scroll-mobile-poster.jpg",
-            width: 1080,
-            height: 2334,
-          }}
-        />
+        <InViewLottie src="/lottie/markets-together-mobile-2.json" width={574} height={1241} />
       </div>
 
       {/* Tablet / desktop: the Lottie scene (Scene-4, 1948 × 1129). Hidden on

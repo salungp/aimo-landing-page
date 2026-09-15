@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { AnimationItem } from "lottie-web";
-import { featherMaskStyle } from "./featherMask";
 
 type InViewLottieProps = {
   /** Public URL of the Lottie JSON — fetched at runtime, never bundled. */
@@ -16,8 +15,8 @@ type InViewLottieProps = {
 const STILL_FRAME = 60;
 
 /**
- * A looping Lottie that plays on its own, presented like the section's video:
- * same sizing, 64px corners and feathered edges.
+ * A looping Lottie that plays on its own: fills the width up to 1400px (never
+ * taller than ~90% of the viewport), with 64px rounded corners and no edge mask.
  *
  * Built for a heavy composition (this one has ~1,700 layers and ~4MB of
  * embedded images):
@@ -122,7 +121,6 @@ export default function InViewLottie({ src, width, height }: InViewLottieProps) 
         width: `min(100%, 1400px, calc(90svh * ${width / height}))`,
         aspectRatio: `${width} / ${height}`,
         opacity: ready ? 1 : 0,
-        ...featherMaskStyle(width, height),
       }}
     />
   );
