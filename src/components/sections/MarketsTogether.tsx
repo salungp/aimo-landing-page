@@ -22,7 +22,7 @@ export default function MarketsTogether() {
       {/* Tablet / desktop: the Lottie scene (Scene-4, 1948 × 1129). Hidden on
           mobile, where it's likewise never fetched. */}
       <div className="hidden w-full tablet:block">
-        <InViewLottie src="/lottie/markets-together-desktop-2.json" width={1948} height={1129} />
+        <InViewLottie src="/lottie/markets-together-desktop.json" width={1948} height={1129} />
       </div>
       </div>
       </div>
