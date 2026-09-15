@@ -5,11 +5,18 @@ import TitleReveal from "../TitleReveal";
 
 export default function MarketsTogether() {
   return (
-    <section className="overflow-x-clip py-20 tablet:py-28 desktop:py-32">
+    // Sticky: the media pins to the centre of the screen when the section
+    // arrives and holds for about half a screen of extra scrolling, then
+    // moves on. The pinned stage centres it with room above and below, so the
+    // section needs no padding of its own. overflow-x-clip (not hidden) keeps
+    // sticky working.
+    <section className="overflow-x-clip">
+      <div className="relative h-[150vh]">
+      <div className="sticky top-0 flex h-svh items-center justify-center">
       {/* Mobile: the portrait video, unchanged. Hidden from tablet up — a
           display:none element never intersects the viewport, so its file is
           never fetched there. */}
-      <div className="tablet:hidden">
+      <div className="w-full tablet:hidden">
         <InViewVideo
           desktop={{
             mp4: "/video/markets-scroll-mobile.mp4",
@@ -22,8 +29,10 @@ export default function MarketsTogether() {
 
       {/* Tablet / desktop: the Lottie scene (Scene-4, 1948 × 1129). Hidden on
           mobile, where it's likewise never fetched. */}
-      <div className="hidden tablet:block">
+      <div className="hidden w-full tablet:block">
         <InViewLottie src="/lottie/markets-together-desktop-2.json" width={1948} height={1129} />
+      </div>
+      </div>
       </div>
 
       {/* <Container>
