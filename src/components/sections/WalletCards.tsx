@@ -439,18 +439,21 @@ function EmergingCard({
   );
 }
 
-/** Figma "Card": dark tile, icon + gradient label on top (the part that peeks out of the pocket), then title and body. */
+/**
+ * Figma "Wallet" card (225:4332): flat #171f1a tile, 34px radius, soft drop
+ * shadow and a thin white top highlight drawn over the content. Icon +
+ * gradient label on top (the part that peeks out of the pocket), then title
+ * and body.
+ */
 function CardFace({ card, width }: { card: Card; width: number | null }) {
   // Scale typography with the card, with floors so small phones stay readable.
   const s = width ? width / 433.908 : 0.8;
   const pad = 21.55 * s;
   const icon = Math.max(30, 40.23 * s);
-  const radius = 34.483 * s;
-
   return (
     <div
-      className="relative flex size-full flex-col overflow-hidden border border-white/[0.06] bg-[#1e2922] shadow-[inset_0_2px_1px_rgba(255,255,255,0.05)]"
-      style={{ borderRadius: radius, padding: `${15.8 * s}px ${pad}px ${pad}px`, minHeight: width ? undefined : 220 }}
+      className="relative flex size-full flex-col overflow-hidden rounded-[34px] bg-[#171f1a] shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+      style={{ padding: `${15.8 * s}px ${pad}px ${pad}px`, minHeight: width ? undefined : 220 }}
     >
       <div className="flex items-center" style={{ gap: 11.5 * s }}>
         <div
@@ -476,6 +479,12 @@ function CardFace({ card, width }: { card: Card; width: number | null }) {
           {card.body}
         </p>
       </div>
+
+      {/* Inner highlight sits above the content, as in Figma. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_2px_1px_rgba(255,255,255,0.06)]"
+      />
     </div>
   );
 }

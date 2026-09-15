@@ -61,6 +61,33 @@ body {
   color: var(--color-ink);
 }
 
+/* Hero brand strip marquee. The track holds two identical copies of the row;
+ * sliding it by exactly -50% lands the second copy where the first began, so
+ * the loop is seamless. Transform-only, so it runs on the compositor. */
+@keyframes brand-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.brand-marquee-track {
+  animation: brand-marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.brand-marquee:hover .brand-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-marquee-track {
+    animation: none;
+  }
+}
+
 /* Lenis smooth-scroll setup */
 html.lenis,
 html.lenis body {

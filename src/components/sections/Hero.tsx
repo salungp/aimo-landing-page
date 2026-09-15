@@ -27,14 +27,20 @@ const HERO_BG_MP4 = "/video/hero-bg-loop.mp4";
 const HERO_BG_WEBM = "/video/hero-bg-loop.webm";
 const HERO_BG_POSTER = "/video/hero-bg-loop-poster.webp";
 
-// Same fixed pixel heights at every breakpoint per Figma (mobile doesn't
-// shrink these — it just wraps them onto more lines via flex-wrap).
-const markets = [
-  { name: "Polymarket", src: "/images/hero/polymarket.svg", h: "h-[28px]" },
-  { name: "Hyperliquid", src: "/images/hero/hyperliquid.svg", h: "h-[27px]" },
-  { name: "Solana", src: "/images/hero/solana.svg", h: "h-[23px]" },
-  { name: "Bitcoin", src: "/images/hero/bitcoin.svg", h: "h-[23px]" },
+// Brand strip (Figma 225:4156). Heights are Figma's; mobile renders them at
+// 80%. The SVGs ship with the design's 40% white baked in; Privy is a raster
+// brandmark, so its 40% is applied here instead.
+const brands: { name: string; src: string; w: number; h: number; opacity?: number }[] = [
+  { name: "Polymarket", src: "/images/hero/polymarket.svg", w: 150, h: 28 },
+  { name: "Hyperliquid", src: "/images/hero/hyperliquid.svg", w: 150, h: 27 },
+  { name: "BNB Chain", src: "/images/hero/bnb-chain.svg", w: 148, h: 26 },
+  { name: "Robinhood", src: "/images/hero/robinhood.svg", w: 136, h: 26 },
+  { name: "Privy", src: "/images/hero/privy.png", w: 115, h: 26, opacity: 0.4 },
 ];
+
+/** Both ends of the strip fade into the background (257px of Figma's 1000px row). */
+const BRAND_FADE =
+  "linear-gradient(to right, transparent, #000 25.7%, #000 74.3%, transparent)";
 
 export default function Hero() {
   return (
@@ -104,23 +110,40 @@ export default function Hero() {
         </Container>
       </div>
 
+      {/* Brand strip: the logo row scrolls in a seamless loop (see
+          .brand-marquee in globals.css), fading out at both ends. The second
+          copy of the row is decorative, so it's hidden from assistive tech. */}
       <Reveal from="up" delay={0.35} className="pt-16 pb-8 tablet:pt-0 tablet:pb-10">
-        <Container>
-          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-4 tablet:gap-x-10">
-            <p className="whitespace-nowrap text-sm text-black-30 tablet:text-base">
-              Connected market
-            </p>
-            {markets.map((market) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={market.name}
-                src={market.src}
-                alt={market.name}
-                className={`${market.h} w-auto opacity-50`}
-              />
+        <div
+          className="brand-marquee mx-auto w-full max-w-[1000px] overflow-hidden"
+          style={{ maskImage: BRAND_FADE, WebkitMaskImage: BRAND_FADE }}
+        >
+          <div className="brand-marquee-track flex w-max">
+            {[0, 1].map((copy) => (
+              <ul
+                key={copy}
+                aria-hidden={copy === 1 ? true : undefined}
+                aria-label={copy === 0 ? "Connected markets" : undefined}
+                className="flex shrink-0 items-center gap-10 pr-10 tablet:gap-[70px] tablet:pr-[70px]"
+              >
+                {brands.map((brand) => (
+                  <li key={brand.name} className="shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={brand.src}
+                      alt={copy === 0 ? brand.name : ""}
+                      width={brand.w}
+                      height={brand.h}
+                      draggable={false}
+                      className="h-[calc(var(--h)*0.8)] w-auto tablet:h-[var(--h)]"
+                      style={{ "--h": `${brand.h}px`, opacity: brand.opacity } as React.CSSProperties}
+                    />
+                  </li>
+                ))}
+              </ul>
             ))}
           </div>
-        </Container>
+        </div>
       </Reveal>
     </section>
   );

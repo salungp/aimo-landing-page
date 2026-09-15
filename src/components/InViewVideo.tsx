@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { featherMask } from "./featherMask";
 
 type VideoSource = {
   mp4: string;
@@ -20,9 +21,6 @@ type InViewVideoProps = {
 /** Matches the Tailwind `tablet:` breakpoint. */
 const MOBILE_QUERY = "(max-width: 767.98px)";
 
-/** Fades all four edges so the video's own background melts into the page. */
-const EDGE_MASK =
-  "linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent)";
 
 function useIsMobile() {
   const subscribe = useCallback((onChange: () => void) => {
@@ -56,6 +54,13 @@ export default function InViewVideo({ desktop, mobile }: InViewVideoProps) {
     const video = videoRef.current;
     if (!video) return;
 
+    // React sets `muted` only as a DOM property, never as the HTML attribute,
+    // and iOS Safari's autoplay policy looks for the attribute — without it
+    // play() can be refused on iPhone. Set all three so it's muted everywhere.
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
+
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let visible = false;
 
@@ -68,8 +73,10 @@ export default function InViewVideo({ desktop, mobile }: InViewVideoProps) {
     const near = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
+        // Changing `preload` alone doesn't start a fetch in every browser
+        // (Safari waits), so explicitly load once the section is near.
         video.preload = "auto";
-        if (!video.currentSrc) video.load();
+        video.load();
         near.disconnect();
       },
       { rootMargin: "100% 0px" },
@@ -81,7 +88,7 @@ export default function InViewVideo({ desktop, mobile }: InViewVideoProps) {
         if (visible) tryPlay();
         else video.pause();
       },
-      { threshold: 0.35 },
+      { threshold: 0.2 },
     );
 
     const onVisibility = () => {
@@ -114,15 +121,17 @@ export default function InViewVideo({ desktop, mobile }: InViewVideoProps) {
       width={source.width}
       height={source.height}
       aria-hidden
-      className="mx-auto block h-auto object-contain"
+      className="mx-auto block h-auto rounded-[64px] object-contain"
       style={{
         // Fill the width up to 1400px, but never taller than ~90% of the
-        // viewport, so the masked edges always sit on the video itself.
+        // viewport, so the feathered edges always sit on the video itself.
         width: `min(100%, 1400px, calc(90svh * ${source.width / source.height}))`,
-        maskImage: EDGE_MASK,
-        WebkitMaskImage: EDGE_MASK,
-        maskComposite: "intersect",
-        WebkitMaskComposite: "source-in",
+        maskImage: featherMask(source.width, source.height),
+        WebkitMaskImage: featherMask(source.width, source.height),
+        maskSize: "100% 100%",
+        WebkitMaskSize: "100% 100%",
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
       }}
     >
       <source src={source.mp4} type="video/mp4" />
