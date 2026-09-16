@@ -3,6 +3,7 @@ import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
 import LoopVideo from "../LoopVideo";
 import AsciiField from "../AsciiField";
+import BrandStrip from "../BrandStrip";
 
 // Built from 5.25s-9.29s of the source clip. That window is where the vortex
 // comes back around closest to its own start — found by scoring every frame
@@ -26,21 +27,6 @@ import AsciiField from "../AsciiField";
 const HERO_BG_MP4 = "/video/hero-bg-loop.mp4";
 const HERO_BG_WEBM = "/video/hero-bg-loop.webm";
 const HERO_BG_POSTER = "/video/hero-bg-loop-poster.webp";
-
-// Brand strip (Figma 225:4156). Heights are Figma's; mobile renders them at
-// 80%. The SVGs ship with the design's 40% white baked in; Privy is a raster
-// brandmark, so its 40% is applied here instead.
-const brands: { name: string; src: string; w: number; h: number; opacity?: number }[] = [
-  { name: "Polymarket", src: "/images/hero/polymarket.svg", w: 150, h: 28 },
-  { name: "Hyperliquid", src: "/images/hero/hyperliquid.svg", w: 150, h: 27 },
-  { name: "BNB Chain", src: "/images/hero/bnb-chain.svg", w: 148, h: 26 },
-  { name: "Robinhood", src: "/images/hero/robinhood.svg", w: 136, h: 26 },
-  { name: "Privy", src: "/images/hero/privy.png", w: 115, h: 26, opacity: 0.4 },
-];
-
-/** Both ends of the strip fade into the background (257px of Figma's 1000px row). */
-const BRAND_FADE =
-  "linear-gradient(to right, transparent, #000 25.7%, #000 74.3%, transparent)";
 
 export default function Hero() {
   return (
@@ -110,40 +96,10 @@ export default function Hero() {
         </Container>
       </div>
 
-      {/* Brand strip: the logo row scrolls in a seamless loop (see
-          .brand-marquee in globals.css), fading out at both ends. The second
-          copy of the row is decorative, so it's hidden from assistive tech. */}
+      {/* Brand strip: the logo row drifts in a seamless loop and can also be
+          dragged or swiped through (see BrandStrip), fading out at both ends. */}
       <Reveal from="up" delay={0.35} className="pt-16 pb-8 tablet:pt-0 tablet:pb-10">
-        <div
-          className="brand-marquee mx-auto w-full max-w-[1000px] overflow-hidden"
-          style={{ maskImage: BRAND_FADE, WebkitMaskImage: BRAND_FADE }}
-        >
-          <div className="brand-marquee-track flex w-max">
-            {[0, 1].map((copy) => (
-              <ul
-                key={copy}
-                aria-hidden={copy === 1 ? true : undefined}
-                aria-label={copy === 0 ? "Connected markets" : undefined}
-                className="flex shrink-0 items-center gap-10 pr-10 tablet:gap-[70px] tablet:pr-[70px]"
-              >
-                {brands.map((brand) => (
-                  <li key={brand.name} className="shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={brand.src}
-                      alt={copy === 0 ? brand.name : ""}
-                      width={brand.w}
-                      height={brand.h}
-                      draggable={false}
-                      className="h-[calc(var(--h)*0.8)] w-auto tablet:h-[var(--h)]"
-                      style={{ "--h": `${brand.h}px`, opacity: brand.opacity } as React.CSSProperties}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
-        </div>
+        <BrandStrip />
       </Reveal>
     </section>
   );

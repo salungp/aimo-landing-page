@@ -61,15 +61,17 @@ body {
   color: var(--color-ink);
 }
 
-/* Hero brand strip marquee. The track holds two identical copies of the row;
- * sliding it by exactly -50% lands the second copy where the first began, so
- * the loop is seamless. Transform-only, so it runs on the compositor. */
+/* Hero brand strip. The track holds --brand-copies identical copies of the row;
+ * sliding it by exactly one of them lands the next copy where the last began,
+ * so the loop is seamless. Transform-only, so it runs on the compositor — and
+ * the reader's own scrolling is left to the browser on the element below, which
+ * keeps the two off each other and out of the main thread. */
 @keyframes brand-marquee {
   from {
     transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translate3d(-50%, 0, 0);
+    transform: translate3d(calc(-100% / var(--brand-copies, 2)), 0, 0);
   }
 }
 
@@ -78,8 +80,41 @@ body {
   will-change: transform;
 }
 
-.brand-marquee:hover .brand-marquee-track {
+/* The strip is draggable and swipeable as well as self-drifting. No scrollbar,
+ * and `contain` so running out of strip does not hand the gesture to the
+ * browser's back-swipe. touch-action is left alone on purpose: the browser then
+ * decides by gesture direction, so a vertical swipe still scrolls the page. */
+.brand-marquee {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.brand-marquee::-webkit-scrollbar {
+  display: none;
+}
+
+/* Stop drifting while the reader has hold of it: for the moment after a drag or
+ * a swipe (BrandStrip sets data-holding), and on hover. The hover half is gated
+ * to real pointers on purpose — a tap leaves :hover stuck on a touch device,
+ * which would park the strip until the reader tapped somewhere else. */
+.brand-marquee[data-holding] .brand-marquee-track {
   animation-play-state: paused;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .brand-marquee {
+    cursor: grab;
+  }
+
+  .brand-marquee[data-dragging] {
+    cursor: grabbing;
+  }
+
+  .brand-marquee:hover .brand-marquee-track {
+    animation-play-state: paused;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

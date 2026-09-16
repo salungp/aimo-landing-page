@@ -1,5 +1,6 @@
 import Container from "../Container";
 import InViewLottie from "../InViewLottie";
+import InViewLoopVideo from "../InViewLoopVideo";
 import TitleReveal from "../TitleReveal";
 
 export default function MarketsTogether() {
@@ -12,11 +13,26 @@ export default function MarketsTogether() {
     <section className="overflow-x-clip">
       <div className="relative h-[150vh]">
       <div className="sticky top-0 flex h-svh items-center justify-center">
-      {/* Mobile: the portrait Lottie scene (Scene-6, 574 × 1241). Hidden from
-          tablet up — a display:none element never intersects the viewport, so
-          its file is never fetched there. */}
+      {/* Mobile: the portrait scene, pre-rendered from its Lottie (Scene-6,
+          574 × 1241) at 2x and 30fps. Phones paid twice for the Lottie — 5.3MB
+          of JSON parsed on the main thread, then ~2,800 SVG nodes re-rasterised
+          every frame, 27 of them behind Gaussian blur filters for the glows.
+          The video is a fraction of the bytes and the hardware decoder does all
+          of the work. Hidden from tablet up: a display:none element never
+          intersects the viewport, so nothing here is fetched there. */}
       <div className="w-full tablet:hidden">
-        <InViewLottie src="/lottie/markets-together-mobile-2.json" width={574} height={1241} />
+        {/* Same box as the Lottie it replaces: fill the width up to 1400px, but
+            never taller than ~90% of the viewport. The clip lives on the
+            wrapper rather than the video, which older Safari does not round. */}
+        <div className="mx-auto overflow-hidden rounded-[64px] w-[min(100%,1400px,calc(90svh*574/1241))]">
+          <InViewLoopVideo
+            mp4="/video/markets-together-mobile.mp4"
+            poster="/video/markets-together-mobile-poster.webp"
+            width={574}
+            height={1241}
+            className="block h-auto w-full"
+          />
+        </div>
       </div>
 
       {/* Tablet / desktop: the Lottie scene (Scene-4, 1948 × 1129). Hidden on
