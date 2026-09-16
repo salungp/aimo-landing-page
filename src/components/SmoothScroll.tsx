@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import Lenis from "lenis";
 
-export default function SmoothScroll({ children }: { children: ReactNode }) {
-  const lenisRef = useRef<Lenis | null>(null);
+// Module-level rather than a context: the only consumers are one-off imperative
+// calls (scroll this anchor into view), and a context would make every consumer
+// a descendant of a provider for no gain. Null whenever smooth scrolling isn't
+// running — before mount, and permanently under prefers-reduced-motion — so
+// callers must handle that and fall back to a native scroll.
+let activeLenis: Lenis | null = null;
 
+export function getLenis() {
+  return activeLenis;
+}
+
+export default function SmoothScroll({ children }: { children: ReactNode }) {
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -20,7 +29,7 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
       touchMultiplier: 1.4,
     });
 
-    lenisRef.current = lenis;
+    activeLenis = lenis;
 
     let rafId: number;
     function raf(time: number) {
@@ -32,7 +41,7 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
-      lenisRef.current = null;
+      activeLenis = null;
     };
   }, []);
 

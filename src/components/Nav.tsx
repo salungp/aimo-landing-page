@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Container from "./Container";
 import logo from "../../public/images/shared/logo-primary.svg";
 
 const links = [
-  { label: "Features", href: "#features" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Features", hash: "#features" },
+  { label: "How it works", hash: "#how-it-works" },
+  { label: "FAQ", hash: "#faq" },
 ];
 
 // Figma's nav pill and the opened mobile menu share the same dark card
@@ -29,13 +30,20 @@ const ctaClass =
 export default function Nav() {
   const [open, setOpen] = useState(false);
 
+  // The nav sits on every page, but the sections it points at only exist on
+  // the home page. Off it, a bare "#features" would scroll to nothing, so the
+  // hash gets prefixed into a real route — and it stays a bare hash on home so
+  // that clicking it there keeps Lenis's smooth scroll instead of reloading.
+  const onHome = usePathname() === "/";
+  const sectionHref = (hash: string) => (onHome ? hash : `/${hash}`);
+
   return (
     <div className="fixed inset-x-0 top-4 z-50 tablet:top-5">
       <Container>
         <div className="relative">
           <nav className={`flex w-full items-center justify-between gap-3 rounded-full p-[10px] ${surfaceClass}`}>
             <a
-              href="#top"
+              href={onHome ? "#top" : "/"}
               onClick={() => setOpen(false)}
               className="flex shrink-0 items-center px-3"
             >
@@ -45,8 +53,8 @@ export default function Nav() {
             <div className="hidden items-center gap-9 text-base leading-[1.5] text-black-30 tablet:flex">
               {links.map((link) => (
                 <a
-                  key={link.href}
-                  href={link.href}
+                  key={link.hash}
+                  href={sectionHref(link.hash)}
                   className="shrink-0 transition-opacity hover:opacity-60"
                 >
                   {link.label}
@@ -55,7 +63,7 @@ export default function Nav() {
             </div>
 
             {/* Desktop/tablet CTA — mobile gets a hamburger instead, CTA lives in the opened menu. */}
-            <a href="#start-trading" className={`hidden tablet:flex ${ctaClass}`}>
+            <a href={sectionHref("#start-trading")} className={`hidden tablet:flex ${ctaClass}`}>
               Start trading
             </a>
 
@@ -86,8 +94,8 @@ export default function Nav() {
               >
                 {links.map((link) => (
                   <a
-                    key={link.href}
-                    href={link.href}
+                    key={link.hash}
+                    href={sectionHref(link.hash)}
                     onClick={() => setOpen(false)}
                     className="text-base leading-[1.5] text-black-30 transition-opacity hover:opacity-60"
                   >
@@ -95,7 +103,7 @@ export default function Nav() {
                   </a>
                 ))}
                 <a
-                  href="#start-trading"
+                  href={sectionHref("#start-trading")}
                   onClick={() => setOpen(false)}
                   className={`w-fit px-4 ${ctaClass}`}
                 >

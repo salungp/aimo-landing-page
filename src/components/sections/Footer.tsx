@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import Container from "../Container";
 import HalftoneField from "../HalftoneField";
 import Reveal from "../Reveal";
@@ -203,12 +204,12 @@ function SocialRow({ variant }: { variant: "mobile" | "desktop" }) {
 function LegalLinks({ className = "flex" }: { className?: string }) {
   return (
     <div className={`items-center gap-9 ${className}`}>
-      <a href="#" className="transition-opacity hover:opacity-60">
+      <Link href="/terms-of-service" className="transition-opacity hover:opacity-60">
         Terms of Usage
-      </a>
-      <a href="#" className="transition-opacity hover:opacity-60">
+      </Link>
+      <Link href="/privacy-policy" className="transition-opacity hover:opacity-60">
         Privacy policy
-      </a>
+      </Link>
     </div>
   );
 }

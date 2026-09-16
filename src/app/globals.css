@@ -179,6 +179,53 @@ html.lenis body {
   overflow: hidden;
 }
 
+/* Legal pages (terms, privacy). One number decides two things that have to
+ * agree: how far an anchored section stops below the fixed nav, and where the
+ * contents list draws the line that decides which section is "current". Both
+ * read it from here, so they can't drift apart. The value clears the nav plus,
+ * below desktop, the sticky contents bar that sits under it. */
+:root {
+  --legal-anchor-offset: 140px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --legal-anchor-offset: 152px;
+  }
+}
+
+@media (min-width: 1440px) {
+  /* No sticky bar at this width — the contents list is a sidebar — so this
+   * only has to clear the nav. */
+  :root {
+    --legal-anchor-offset: 110px;
+  }
+}
+
+.legal-anchor {
+  scroll-margin-top: var(--legal-anchor-offset);
+}
+
+/* The contents card on those pages. Figma (238:34424) strokes it with a
+ * gradient rather than a flat colour — 20% white along the top edge, fading to
+ * nothing by the bottom, so the card reads as lit from above like the nav pill
+ * above it. `border-color` can't take a gradient, so the border is left
+ * transparent and two background layers stand in: the card's fill clipped to
+ * the padding box, and the gradient clipped to the border box behind it. The
+ * background colour sits under both (it takes the last clip value, so it
+ * covers the border too), which is what makes the translucent stroke
+ * composite over #171f1a exactly as Figma's inside stroke does rather than
+ * over whatever the card happens to be sitting on. */
+.contents-card {
+  border: 1px solid transparent;
+  background-color: #171f1a;
+  background-image:
+    linear-gradient(#171f1a, #171f1a),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
 /* OneBalance word reveal. Each word paints itself with a gradient whose two
  * stops are driven from JS, so the grey → green shift needs no second copy of
  * the text in the DOM (which would double the paragraph for find-in-page,
