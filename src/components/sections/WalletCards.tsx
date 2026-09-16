@@ -1,24 +1,14 @@
 "use client";
 
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   motion,
-  useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
-  useSpring,
-  useTransform,
-  type MotionValue,
+  type Transition,
 } from "framer-motion";
+import clsx from "clsx";
 import Container from "../Container";
 import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
@@ -31,7 +21,8 @@ type Card = {
   body: string;
 };
 
-// Emerge order: the front card in the pocket comes out first.
+// Pop order: the front card in the pocket comes out first, so the deck reads
+// front-to-back and lands left-to-right in the divided row.
 const cards: Card[] = [
   {
     id: "main",
@@ -72,36 +63,64 @@ const cards: Card[] = [
 
 const N = cards.length;
 
-/* ---------- Figma geometry (220:3954), as fractions of the 500 × 390.8 wallet ---------- */
-const WALLET_RATIO = 390.805 / 500;
+/* ---------- Figma geometry (desktop 236:4424, mobile 236:4544) ----------
+ * Both frames draw the same 340 x 265.75 wallet with the same ~300 x 190 cards,
+ * so every measurement below is a fraction of the wallet's width or height and
+ * one set of numbers serves every breakpoint. */
+const WALLET_RATIO = 265.747 / 340;
 /** Top edge of the leather pocket, as a share of wallet height. */
-const POCKET_TOP = 136.49 / 390.805;
-/** Card size as a share of wallet width. */
-const CARD_W = 433.908 / 500;
-const CARD_H = 260.057 / 500;
-/** Resting top of the front card inside the pocket, as a share of wallet height. */
-const CARD_TOP = 61.78 / 390.805;
-/** The card behind sits this much higher (× wallet width) and this much narrower. */
-const STACK_STEP = 18.4 / 500;
-const STACK_SHRINK = 0.08;
+const POCKET_TOP = 92.816 / 265.747;
+/** Card size as a share of wallet width (Figma card is 304 x 192). */
+const CARD_W = 304 / 340;
+const CARD_H = 192 / 340;
+/**
+ * Resting top of the front card inside the pocket, as a share of wallet
+ * height. Lands so the icon + label row clears the leather lip by ~1px — the
+ * label is readable before anything moves.
+ */
+const CARD_TOP = 42 / 265.747;
+/** The wallet's inner face: flat, and a shade darker than a card's #171f1a. */
+const WALLET_FACE = "#121814";
+/** Pocket stack: each card behind sits this much higher (x wallet width) and this much narrower. */
+const STACK_STEP = 9 / 340;
+const STACK_SHRINK = 0.045;
+/** Ladder: the step between popped cards — exactly one icon + label row. */
+const LADDER_PEEK = 51 / 340;
+/** How far the front card lifts clear of the pocket once the ladder forms. */
+const LADDER_LIFT = 30 / 340;
+/** Divided row: 12px gutters, card bottoms 27.8px above the leather lip. */
+const ROW_GAP = 12 / 340;
+const ROW_LIFT = 27.8 / 340;
+/** The row is drawn to bleed past both viewport edges; widen the gutters if it would not. */
+const ROW_BLEED = 1.08;
+/** Above the 1440 frame the wallet grows with the viewport (Figma: 340 on 1440). */
+const ROW_WALLET_SHARE = 340 / 1440;
+/** Wallet width in both Figma frames — held from mobile up to the desktop frame. */
+const WALLET_BASE = 340;
+/** Figma's mobile side margins (393 - 340). */
+const WALLET_MARGIN = 52;
 
-/* ---------- motion ---------- */
-/** Share of the pinned scroll spent emerging — the rest holds the final layout before it unpins. */
-const DECK_FILL_END = 0.85;
-/** Each card's slice of the timeline, and how far apart consecutive cards start. */
-const WINDOW = 0.34;
-const STAGGER = (1 - WINDOW) / (N - 1);
-/** Share of a card's slice spent rising out of the pocket (the rest travels / settles). */
-const RISE = 0.5;
-/** Max tilt (deg) while a card is in flight — always returns to 0 when it lands. */
-const TILT = 5;
-/** Stack mode: how far each earlier card steps up behind the newest one. */
-const STACK_PEEK = 14;
+/** Marquee drift in px/s — alive, but slow enough to read a card as it passes. */
+const MARQUEE_SPEED = 75;
 
-/** Wide enough to lay the four cards out beside the wallet. */
-const FAN_QUERY = "(min-width: 1280px)";
+/** Depth falloff for the cards still tucked in the pocket. */
+const POCKET_FADE = cards.map((_, i) => Math.max(0.18, 1 - 0.28 * Math.max(0, i - 1)));
 
-type Mode = "fan" | "stack";
+/** pocket → ladder on the first scroll; the rest follows on its own. */
+type Phase = "pocket" | "ladder" | "row" | "marquee";
+
+/** Beat between the deck finishing its pop and dividing into the row, in ms. */
+const DIVIDE_DELAY = 760;
+/**
+ * And before the strip starts to drift. Deliberately a touch early — the last
+ * of the spread's travel is still on screen, which hides the step from a dead
+ * stop to a constant crawl.
+ */
+const MARQUEE_DELAY = 560;
+
+/** Stage height the row layout needs, in wallet widths: row top to wallet bottom. */
+const ROW_RISE = ROW_LIFT + CARD_H - WALLET_RATIO * POCKET_TOP;
+const ROW_HEIGHT = ROW_RISE + WALLET_RATIO;
 
 type Geometry = {
   walletW: number;
@@ -109,181 +128,132 @@ type Geometry = {
   walletTop: number;
   cardW: number;
   cardH: number;
-  /** Card top while tucked in the pocket (front position). */
+  /** Front card top while tucked in the pocket. */
   restTop: number;
-  /** Card top once fully out — clear of the pocket and of the card peeking behind. */
-  riseTop: number;
-  /** Fan mode: final card positions (x from centre, card top). */
-  slots: { x: number; y: number }[];
+  /** Front card top once the ladder is out, and the step up to the card behind. */
+  ladderTop: number;
+  ladderStep: number;
+  /** Divided row: shared card top, and the centre-to-centre pitch. */
+  rowTop: number;
+  rowStep: number;
+  /** Marquee: how far the strip travels before it repeats, and how long that takes. */
+  marqueeShift: number;
+  marqueeDuration: number;
+  /** Which copies of the deck to lay out, as multiples of marqueeShift. */
+  copies: number[];
 };
 
-const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+function computeGeometry(w: number, h: number): Geometry {
+  const bottom = 24;
+  const top = 8;
 
-/** Gentle overshoot (~6%) — the "bouncy but not too much" settle. */
-function easeOutBack(x: number) {
-  const c1 = 1.2;
-  const c3 = c1 + 1;
-  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
-}
-
-function localT(progress: number, index: number) {
-  return clamp01((progress - index * STAGGER) / WINDOW);
-}
-
-function toDeck(progress: number) {
-  return clamp01(progress / DECK_FILL_END);
-}
-
-function computeGeometry(mode: Mode, w: number, h: number): Geometry {
-  if (mode === "fan") {
-    // Wallet anchored near the bottom of the stage so the whole space above it
-    // is available for each card to rise into — lets the wallet stay close to
-    // Figma's size instead of shrinking to fit a centred layout. Width is the
-    // largest that satisfies both: the risen card clears the stage top, and the
-    // upper pair of side slots fits above the lower pair.
-    const bottom = 24;
-    const gap = 32;
-    const walletW = Math.max(
-      240,
-      Math.min(
-        440,
-        w * 0.3,
-        (h - bottom - 8) / (WALLET_RATIO * (1 - CARD_TOP) + STACK_STEP + CARD_H),
-        (h - bottom - gap) / (2 * CARD_H),
-      ),
-    );
-    const walletH = walletW * WALLET_RATIO;
-    const walletTop = h - bottom - walletH;
-    const cardW = walletW * CARD_W;
-    const cardH = walletW * CARD_H;
-    const restTop = walletTop + walletH * CARD_TOP;
-    const riseTop = restTop - STACK_STEP * walletW - 8 - cardH;
-    const slotX = Math.min(walletW / 2 + 56 + cardW / 2, w / 2 - cardW / 2 - 24);
-    // Side slots stack upward from the wallet's bottom edge.
-    const walletBottom = walletTop + walletH;
-    const lower = walletBottom - cardH;
-    const upper = lower - gap - cardH;
-    return {
-      walletW,
-      walletH,
-      walletTop,
-      cardW,
-      cardH,
-      restTop,
-      riseTop,
-      slots: [
-        { x: -slotX, y: upper },
-        { x: slotX, y: upper },
-        { x: -slotX, y: lower },
-        { x: slotX, y: lower },
-        // Last card sits top-centre, aligned with the upper pair (Main & Spot).
-        // Its bottom edge still clears the leather, so it reads as standing up
-        // out of the pocket; it rises, then settles down into line.
-        { x: 0, y: upper },
-      ],
-    };
-  }
-
-  // Stack: wallet anchored to the bottom, newest card showcased above the
-  // pocket with the earlier ones peeking out behind it. Sized so the whole
-  // column (peeks + card + wallet) fits the available height.
-  const bottom = 16;
+  // Size from the divided row: that is the laid-out design, and it is where the
+  // reader spends the most time. 340px from mobile up to the 1440 frame, then
+  // proportional, and never so wide that the row cannot fit the stage.
   const walletW = Math.max(
     220,
     Math.min(
-      380,
-      w - 40,
-      (h - (N - 1) * STACK_PEEK - 8 - bottom - 8) / (CARD_H + STACK_STEP + WALLET_RATIO * (1 - CARD_TOP)),
+      Math.max(WALLET_BASE, w * ROW_WALLET_SHARE),
+      w - WALLET_MARGIN,
+      460,
+      (h - bottom - top) / ROW_HEIGHT,
     ),
   );
   const walletH = walletW * WALLET_RATIO;
-  const walletTop = h - walletH - bottom;
   const cardW = walletW * CARD_W;
   const cardH = walletW * CARD_H;
+  // Centre the row composition in whatever height is left over. At 1440 x 900
+  // this lands the row and the wallet within ~2px of the Figma frame.
+  const slack = Math.max(0, h - bottom - top - ROW_HEIGHT * walletW);
+  const walletTop = h - bottom - walletH - slack / 2;
   const restTop = walletTop + walletH * CARD_TOP;
-  const riseTop = restTop - STACK_STEP * walletW - 8 - cardH;
-  return { walletW, walletH, walletTop, cardW, cardH, restTop, riseTop, slots: [] };
-}
+  const ladderTop = restTop - walletW * LADDER_LIFT;
 
-type Frame = { x: number; y: number; rot: number; scale: number; z: number; opacity: number };
+  // The ladder is the transient intro, so it yields rather than shrinking the
+  // wallet: it takes the full header-row step when there is room above the
+  // wallet, and tightens when a short window leaves less.
+  const ladderStep = Math.max(
+    walletW * 0.1,
+    Math.min(walletW * LADDER_PEEK, (ladderTop - top) / (N - 1)),
+  );
 
-function cardFrame(mode: Mode, g: Geometry, i: number, p: number): Frame {
-  const t = localT(p, i);
+  // Keep the bleed even when a short window has forced the wallet down a size,
+  // but never open the gutters past a tenth of a card — at that point the row
+  // reads as five separate cards rather than one continuous strip.
+  const gap = Math.min(
+    Math.max(walletW * ROW_GAP, (w * ROW_BLEED - N * cardW) / (N - 1)),
+    cardW * 0.09,
+  );
+  const rowStep = cardW + gap;
+  const marqueeShift = N * rowStep;
 
-  // Still in the pocket: its depth shrinks as the cards in front leave.
-  if (t <= 0) {
-    let ahead = 0;
-    for (let j = 0; j < i; j++) ahead += clamp01(localT(p, j) / (RISE * 0.6));
-    const depth = Math.max(0, i - ahead);
-    return {
-      x: 0,
-      y: g.restTop - STACK_STEP * g.walletW * depth,
-      rot: 0,
-      scale: 1 - STACK_SHRINK * depth,
-      // Front of the pocket on top; everything in the pocket sits under the leather.
-      z: 10 + N - i,
-      // Only the front card and the one directly behind it are ever visible.
-      opacity: clamp01(2 - depth),
-    };
-  }
+  // Copy 0 is the centred five-card row the deck divides into. Tile further
+  // copies either side — just enough that the strip still covers the viewport
+  // at every point in the loop, so it never drifts a gap into view.
+  const half = (marqueeShift - gap) / 2;
+  const first = Math.min(0, Math.floor((half - w / 2) / marqueeShift));
+  const last = Math.max(1, Math.ceil((w / 2 + marqueeShift - half) / marqueeShift));
+  const copies: number[] = [];
+  for (let k = first; k <= last; k++) copies.push(k);
 
-  const riseRaw = clamp01(t / RISE);
-  const rise = easeOutBack(riseRaw);
-  const risenY = lerp(g.restTop, g.riseTop, rise);
-  const wobble = Math.sin(Math.PI * riseRaw);
-
-  if (mode === "fan") {
-    const slot = g.slots[i];
-    const side = slot.x < 0 ? -1 : 1;
-    const travelRaw = clamp01((t - RISE) / (1 - RISE));
-    const travel = t <= RISE ? 0 : easeOutBack(travelRaw);
-    return {
-      x: lerp(0, slot.x, travel),
-      y: lerp(risenY, slot.y, travel),
-      rot: side * (2 * wobble + TILT * Math.sin(Math.PI * travelRaw)),
-      scale: 1,
-      // Behind the leather while rising; above it once clear, so it can fly over the pocket.
-      z: t < RISE ? 10 + N - i : 30 + i,
-      opacity: 1,
-    };
-  }
-
-  // Stack: step back and up as later cards rise in front.
-  let level = 0;
-  for (let j = i + 1; j < N; j++) level += clamp01(localT(p, j) / RISE);
   return {
-    x: 0,
-    y: risenY - STACK_PEEK * level,
-    rot: (i % 2 === 0 ? -1 : 1) * 2.5 * wobble,
-    scale: 1 - 0.05 * level,
-    // Rising cards slide in front of earlier showcased cards but stay under the
-    // leather; once out they drop below the pocket layer (no overlap by then).
-    z: t < RISE ? 10 + N - i : 1 + i,
-    opacity: 1,
+    walletW,
+    walletH,
+    walletTop,
+    cardW,
+    cardH,
+    restTop,
+    ladderTop,
+    ladderStep,
+    rowTop: walletTop + walletH * POCKET_TOP - walletW * ROW_LIFT - cardH,
+    rowStep,
+    marqueeShift,
+    marqueeDuration: marqueeShift / MARQUEE_SPEED,
+    copies,
   };
 }
 
-function useMediaQuery(query: string) {
-  const subscribe = useCallback(
-    (onChange: () => void) => {
-      const mql = window.matchMedia(query);
-      mql.addEventListener("change", onChange);
-      return () => mql.removeEventListener("change", onChange);
-    },
-    [query],
-  );
-  return useSyncExternalStore(
-    subscribe,
-    () => window.matchMedia(query).matches,
-    () => false,
-  );
+type Frame = { x: number; y: number; scale: number; opacity: number };
+
+function cardFrame(phase: Phase, g: Geometry, i: number, copy: number): Frame {
+  const dx = copy * g.marqueeShift;
+  if (phase === "pocket") {
+    return {
+      x: dx,
+      y: g.restTop - g.walletW * STACK_STEP * i,
+      scale: 1 - STACK_SHRINK * i,
+      opacity: POCKET_FADE[i],
+    };
+  }
+  if (phase === "row" || phase === "marquee") {
+    return { x: dx + (i - (N - 1) / 2) * g.rowStep, y: g.rowTop, scale: 1, opacity: 1 };
+  }
+  // Ladder — the reference stack: straight up, no tilt, each card a header row
+  // higher than the one in front of it.
+  return { x: dx, y: g.ladderTop - g.ladderStep * i, scale: 1, opacity: 1 };
+}
+
+function cardTransition(phase: Phase, i: number): Transition {
+  // Resetting only ever happens off screen, so it should not be animated. By
+  // the marquee the cards are already in place — the strip is what moves.
+  if (phase === "pocket" || phase === "marquee") return { duration: 0 };
+  if (phase === "row") {
+    // Near-critical: the spread glides out rather than bouncing. Centre card
+    // leads, its neighbours follow, so the deck opens like a hand of cards.
+    return {
+      type: "spring",
+      stiffness: 170,
+      damping: 22,
+      mass: 1,
+      delay: Math.abs(i - (N - 1) / 2) * 0.06,
+    };
+  }
+  // ~8% overshoot — the gentle settle the reference pop has.
+  return { type: "spring", stiffness: 210, damping: 17, mass: 0.9, delay: i * 0.06 };
 }
 
 export default function WalletCards() {
   const reduceMotion = useReducedMotion();
-  const isFan = useMediaQuery(FAN_QUERY);
-  const mode: Mode = isFan ? "fan" : "stack";
 
   const header = (
     <div className="mx-auto flex max-w-[640px] flex-col items-center gap-3 text-center">
@@ -321,43 +291,46 @@ export default function WalletCards() {
     );
   }
 
-  return <WalletStage mode={mode} header={header} />;
+  return <WalletStage header={header} />;
 }
 
-function WalletStage({ mode, header }: { mode: Mode; header: React.ReactNode }) {
+function WalletStage({ header }: { header: React.ReactNode }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [phase, setPhase] = useState<Phase>("pocket");
 
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ["start start", "end end"] });
 
-  // One-way progress: cards only ever come *out* with scroll. Scrolling back up
-  // leaves them out; they tuck back in only once the reader is on the hero with
-  // this section off screen, so the reverse is never seen.
-  const deckProgress = useMotionValue(0);
-  // Light spring on top of scroll so flicks and wheel steps glide instead of stepping.
-  const progress = useSpring(deckProgress, { stiffness: 150, damping: 26, mass: 0.7, restDelta: 0.0005 });
-  const { scrollY } = useScroll();
-
+  // One trigger. Progress leaves 0 the moment the section pins, and that single
+  // scroll plays the whole thing — no scrubbing, so nothing is left half-open.
   useMotionValueEvent(scrollYProgress, "change", (v) => {
-    const next = toDeck(v);
-    if (next > deckProgress.get()) deckProgress.set(next);
+    if (v > 0.004) setPhase((prev) => (prev === "pocket" ? "ladder" : prev));
   });
 
-  useMotionValueEvent(scrollY, "change", () => {
-    if (deckProgress.get() === 0 || scrollYProgress.get() > 0) return;
-    const hero = document.getElementById("top");
-    if (hero && hero.getBoundingClientRect().bottom > 0) {
-      deckProgress.set(0);
-      progress.jump(0);
-    }
-  });
-
+  // Tuck back in so the deck is fresh on the way back up. The default
+  // threshold means this only fires once the whole track has left the
+  // viewport, so the reverse is never seen.
   useEffect(() => {
-    const start = toDeck(scrollYProgress.get());
-    deckProgress.set(start);
-    progress.jump(start);
-  }, [deckProgress, progress, scrollYProgress]);
+    const track = trackRef.current;
+    if (!track) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) setPhase("pocket");
+    });
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, []);
+
+  // ladder → row → marquee, each a beat after the one before it settles.
+  useEffect(() => {
+    if (phase !== "ladder" && phase !== "row") return;
+    const next: Phase = phase === "ladder" ? "row" : "marquee";
+    const id = window.setTimeout(
+      () => setPhase(next),
+      phase === "ladder" ? DIVIDE_DELAY : MARQUEE_DELAY,
+    );
+    return () => window.clearTimeout(id);
+  }, [phase]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -372,21 +345,50 @@ function WalletStage({ mode, header }: { mode: Mode; header: React.ReactNode }) 
     return () => observer.disconnect();
   }, []);
 
-  const geometry = useMemo(() => computeGeometry(mode, size.w, size.h), [mode, size.w, size.h]);
+  const g = useMemo(() => computeGeometry(size.w, size.h), [size.w, size.h]);
 
   return (
     <section id="features">
-      <div ref={trackRef} className={mode === "fan" ? "relative h-[410vh]" : "relative h-[480vh]"}>
+      {/* Short track: enough pin to watch the deck open, not enough to scrub it. */}
+      <div ref={trackRef} className="relative h-[185vh]">
         <div className="sticky top-0 flex h-svh flex-col overflow-hidden pt-[96px] tablet:pt-[112px]">
           <Container>{header}</Container>
           <div ref={stageRef} className="relative mt-6 min-h-0 flex-1 tablet:mt-8">
             {size.w > 0 && (
               <Fragment>
-                <WalletBack g={geometry} />
-                {cards.map((card, i) => (
-                  <EmergingCard key={card.id} card={card} index={i} mode={mode} g={geometry} progress={progress} />
-                ))}
-                <LeatherPocket g={geometry} />
+                <WalletBack g={g} />
+                {/* The strip. Isolated so the cards' stacking stays local and it
+                 * always paints between the wallet's inner face and its
+                 * leather, with or without the marquee transform. */}
+                <div
+                  className={clsx(
+                    "absolute inset-0 isolate",
+                    phase === "marquee" && "wallet-deck-marquee",
+                  )}
+                  style={
+                    {
+                      zIndex: 10,
+                      "--wallet-marquee-shift": `${g.marqueeShift.toFixed(2)}px`,
+                      animationDuration: `${g.marqueeDuration.toFixed(2)}s`,
+                    } as CSSProperties
+                  }
+                >
+                  {g.copies.map((copy) =>
+                    cards.map((card, i) => (
+                      <DeckCard
+                        key={`${card.id}:${copy}`}
+                        card={card}
+                        index={i}
+                        copy={copy}
+                        phase={phase}
+                        g={g}
+                      />
+                    )),
+                  )}
+                </div>
+                <LeatherPocket g={g} />
+                <EdgeFade side="left" />
+                <EdgeFade side="right" />
               </Fragment>
             )}
           </div>
@@ -396,43 +398,36 @@ function WalletStage({ mode, header }: { mode: Mode; header: React.ReactNode }) 
   );
 }
 
-function EmergingCard({
+function DeckCard({
   card,
   index,
-  mode,
+  copy,
+  phase,
   g,
-  progress,
 }: {
   card: Card;
   index: number;
-  mode: Mode;
+  copy: number;
+  phase: Phase;
   g: Geometry;
-  progress: MotionValue<number>;
 }) {
-  // Geometry changes (resize, mode switch) swap the transformer; a version
-  // counter in the inputs makes the motion values recompute immediately.
-  const version = useMotionValue(0);
-  const geoRef = useRef(g);
-  useEffect(() => {
-    geoRef.current = g;
-    version.set(version.get() + 1);
-  }, [g, version]);
-  const modeRef = useRef(mode);
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
-
-  const transform = useTransform([progress, version], ([p]: number[]) => {
-    const f = cardFrame(modeRef.current, geoRef.current, index, p);
-    return `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) rotate(${f.rot.toFixed(3)}deg) scale(${f.scale.toFixed(4)})`;
-  });
-  const zIndex = useTransform([progress, version], ([p]: number[]) => cardFrame(modeRef.current, geoRef.current, index, p).z);
-  const opacity = useTransform([progress, version], ([p]: number[]) => cardFrame(modeRef.current, geoRef.current, index, p).opacity);
-
+  const f = cardFrame(phase, g, index, copy);
   return (
     <motion.div
       className="absolute top-0 left-1/2 origin-top will-change-transform"
-      style={{ width: g.cardW, height: g.cardH, marginLeft: -g.cardW / 2, transform, zIndex, opacity }}
+      style={{
+        width: g.cardW,
+        height: g.cardH,
+        marginLeft: -g.cardW / 2,
+        // Lower on screen means further forward, in the pocket and in the
+        // ladder alike; the leather sits above every card.
+        zIndex: N - index,
+      }}
+      initial={false}
+      animate={{ x: f.x, y: f.y, scale: f.scale, opacity: f.opacity }}
+      transition={cardTransition(phase, index)}
+      // Only the centred copy is real content; the others are the strip's tail.
+      aria-hidden={copy !== 0 || undefined}
     >
       <CardFace card={card} width={g.cardW} />
     </motion.div>
@@ -440,42 +435,53 @@ function EmergingCard({
 }
 
 /**
- * Figma "Wallet" card (225:4332): flat #171f1a tile, 34px radius, soft drop
+ * Figma "Wallet" card (236:4448): flat #171f1a tile, 34px radius, soft drop
  * shadow and a thin white top highlight drawn over the content. Icon +
  * gradient label on top (the part that peeks out of the pocket), then title
- * and body.
+ * and body pinned to the bottom.
  */
 function CardFace({ card, width }: { card: Card; width: number | null }) {
-  // Scale typography with the card, with floors so small phones stay readable.
-  const s = width ? width / 433.908 : 0.8;
-  const pad = 21.55 * s;
-  const icon = Math.max(30, 40.23 * s);
+  // Scale with the card — Figma's is 304 wide — with floors so small phones
+  // stay readable. A null width is the static grid, which uses Figma's sizes.
+  const s = width ? width / 304 : 1;
+  const pad = 16 * s;
+  const icon = Math.max(28, 32 * s);
   return (
     <div
-      className="relative flex size-full flex-col overflow-hidden rounded-[34px] bg-[#171f1a] shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
-      style={{ padding: `${15.8 * s}px ${pad}px ${pad}px`, minHeight: width ? undefined : 220 }}
+      className="wallet-deck-card relative flex size-full flex-col overflow-hidden bg-[#171f1a] shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+      style={{
+        padding: `${17.24 * s}px ${pad}px ${20 * s}px`,
+        borderRadius: 34 * s,
+        minHeight: width ? undefined : 192,
+      }}
     >
-      <div className="flex items-center" style={{ gap: 11.5 * s }}>
+      <div className="flex items-center" style={{ gap: 11.494 * s }}>
         <div
           className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#e5fdc3] via-[#9bf31c] to-[#8fee07]"
           style={{ width: icon, height: icon }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={card.icon} alt="" style={{ width: icon * 0.45, height: icon * 0.45 }} />
+          <img src={card.icon} alt="" style={{ width: icon * 0.539, height: icon * 0.539 }} />
         </div>
         <p
           className="bg-gradient-to-b from-primary to-primary-dark bg-clip-text font-medium tracking-[-0.01em] whitespace-nowrap text-transparent"
-          style={{ fontSize: Math.max(14, 20.115 * s) }}
+          style={{ fontSize: Math.max(14, 16 * s) }}
         >
           {card.label}
         </p>
       </div>
 
       <div className="mt-auto flex flex-col" style={{ gap: 6 * s }}>
-        <p className="font-semibold tracking-[-0.01em] text-white" style={{ fontSize: Math.max(15, 21 * s) }}>
+        <p
+          className="font-semibold tracking-[-0.01em] text-white"
+          style={{ fontSize: Math.max(14, 16 * s) }}
+        >
           {card.title}
         </p>
-        <p className="leading-[1.45] tracking-[-0.01em] text-black-50" style={{ fontSize: Math.max(12.5, 16 * s) }}>
+        <p
+          className="leading-[1.5] tracking-[-0.01em] text-black-50"
+          style={{ fontSize: Math.max(12.5, 14 * s) }}
+        >
           {card.body}
         </p>
       </div>
@@ -489,19 +495,44 @@ function CardFace({ card, width }: { card: Card; width: number | null }) {
   );
 }
 
-/** Back panel of the wallet — radial dark gradient with a soft top highlight. Below all cards. */
+/**
+ * Figma 236:4542/4543 — the strip is wider than the frame, and the cards that
+ * hang off each edge fade into the page instead of being cut. Narrower on
+ * phones, where a card is most of the screen.
+ */
+function EdgeFade({ side }: { side: "left" | "right" }) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-y-0 w-[11%] tablet:w-[16.7%]"
+      style={{
+        left: side === "left" ? 0 : undefined,
+        right: side === "right" ? 0 : undefined,
+        background: `linear-gradient(to ${side === "left" ? "right" : "left"}, var(--background) 10%, transparent 100%)`,
+        zIndex: 26,
+      }}
+    />
+  );
+}
+
+/**
+ * The wallet's back panel — the inner face you see above the leather and
+ * through its thumb notch. Flat #121814 with a hairline top highlight, per
+ * Figma. A gradient here reads as a crack where the panel meets a card,
+ * because it lands on the cards' own #171f1a.
+ */
 function WalletBack({ g }: { g: Geometry }) {
   return (
     <div
       aria-hidden
-      className="absolute left-1/2 shadow-[inset_0_3px_3px_rgba(255,255,255,0.08)]"
+      className="absolute left-1/2 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]"
       style={{
         top: g.walletTop,
         width: g.walletW,
         height: g.walletH,
         marginLeft: -g.walletW / 2,
         borderRadius: (43.103 / 500) * g.walletW,
-        background: "radial-gradient(60% 50% at 50% 50%, #0c110e 0%, #171f1a 100%)",
+        background: WALLET_FACE,
         zIndex: 0,
       }}
     />
@@ -527,6 +558,22 @@ function LeatherPocket({ g }: { g: Geometry }) {
         zIndex: 20,
       }}
     >
+      {/* The thumb notch is a cut-out in the leather. Back it with the same
+       * inner face: this sits inside the pocket's stacking context, so it is
+       * above every card but under the leather itself, and is only ever visible
+       * through the notch — without it a card's copy reads through the hole.
+       *
+       * It has to be the pocket's silhouette *without* the notch subtracted, so
+       * pocket-mask.svg is no use here: instead it carries the leather path's
+       * own corner radii (23 top / 43 bottom of its 500-wide outline). Left
+       * square it pokes out past all four rounded corners. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: WALLET_FACE,
+          borderRadius: `${(22.9885 / 500) * g.walletW}px ${(22.9885 / 500) * g.walletW}px ${(43.1035 / 500) * g.walletW}px ${(43.1035 / 500) * g.walletW}px`,
+        }}
+      />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/images/wallet/pocket-shape.svg"

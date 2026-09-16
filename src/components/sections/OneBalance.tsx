@@ -1,95 +1,159 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
 
 const copy =
   "Aimo brings your crypto experience together in one simple balance. Your funds are ready across trading, prediction, and more, without the need to constantly move assets between separate wallets. And with gas handled behind the scenes, you can focus on what you want to do instead of worrying about the infrastructure underneath it.";
 
 const words = copy.split(" ");
 
-/** Share of the pinned scroll spent filling — the rest is a short hold on the fully green text before it unpins. */
+/** Share of the pinned scroll spent revealing — the rest is a short hold on the finished paragraph before it unpins. */
 const FILL_END = 0.85;
 
-/** Width of the soft leading edge of the green sweep, in px. */
-const FEATHER = 56;
+/** How many words are mid-reveal at any moment. Higher = softer, more overlapping wave. */
+const OVERLAP = 3;
+
+/** Scroll distance between two consecutive words starting, and the length of one word's reveal. */
+const STEP = FILL_END / (words.length - 1 + OVERLAP);
+const REVEAL = STEP * OVERLAP;
+
+/**
+ * Resting state of a word that hasn't been reached yet. Blur is in `em` so it tracks the responsive font size.
+ *
+ * The fade is deliberately shallow: nearly all of the "it arrived" brightness comes from grey → green, and
+ * dimming the grey further just buries it in the near-black background. Measured against the reference, an
+ * unreached word should still read clearly, at roughly 30% the luminance of a finished one.
+ */
+const SCALE_FROM = 0.5;
+const BLUR_FROM = 0.14;
+const OPACITY_FROM = 0.8;
+
+/** Gradient stops the word interpolates between: `black-50` → the site's `primary`/`primary-dark` pair. */
+const GREY: RGB = [128, 128, 128];
+const GREEN_TOP: RGB = [167, 249, 50];
+const GREEN_BOTTOM: RGB = [143, 238, 7];
+
+/** Reveal is quantised to this many steps, so a word only touches the DOM when it visibly changed. */
+const STEPS = 240;
 
 /** Clear space kept above (fixed nav) and below the paragraph inside the pinned stage. */
 const PAD_TOP = 112;
 const PAD_BOTTOM = 64;
 
 const textClass =
-  "text-center text-[32px] leading-[1.2] font-semibold tracking-[-0.02em] tablet:text-[44px] desktop:text-[60px]";
+  "text-center text-[32px] leading-[1.2] font-semibold tracking-[-0.02em] tablet:text-[44px] desktop:text-[48px]";
 
-type Line = { top: number; height: number; left: number; width: number };
+type RGB = [number, number, number];
+
+/** Smoothstep: eases in and out with no kink at either end, so a word neither pops nor stalls. */
+const ease = (t: number) => t * t * (3 - 2 * t);
+
+const mix = (to: RGB, t: number) =>
+  `rgb(${Math.round(GREY[0] + (to[0] - GREY[0]) * t)},${Math.round(GREY[1] + (to[1] - GREY[1]) * t)},${Math.round(
+    GREY[2] + (to[2] - GREY[2]) * t,
+  )})`;
 
 /**
- * Scroll-driven text fill: the paragraph pins to the viewport while a tall
- * track scrolls past, and a green sweep runs through it letter by letter in
- * reading order — the scroll distance through the pinned track acts as the
- * "playhead".
+ * Scroll-driven word reveal: the paragraph pins to the viewport while a tall
+ * track scrolls past, and the words come into focus one after another — each
+ * rising from half size and a heavy blur to its full size, sharp and green.
  *
- * Built to never repaint while scrolling. The grey paragraph and a green copy
- * are each painted once; per line, the green copy sits in a band that is
- * revealed by sliding a clipping window over it (window translates right,
- * its contents translate back left by the same amount so the text stays put).
- * Only transforms change per frame, which the compositor handles on its own.
- * A masked, feathered right edge on the window makes the sweep glide across
- * letters instead of snapping between them.
+ * Built so that scrolling only ever touches the handful of words actually
+ * mid-reveal:
+ *
+ * - Each word's progress is quantised (`STEPS`); if the rounded value hasn't
+ *   moved since the last frame the word is skipped entirely.
+ * - A word that has finished gets its inline `transform`/`filter`/`opacity`
+ *   *removed*, so ~50 settled words hold no filter layer and never re-raster.
+ *   Same for words not yet reached: written once, then left alone.
+ * - `will-change` sits only on the ~3 words currently in flight.
+ *
+ * The green comes from a gradient painted into the word itself (`.reveal-word`
+ * in globals.css) with its two stops driven from here, rather than a second
+ * copy of the text stacked on top — a duplicate would double the paragraph for
+ * find-in-page, copy/paste and crawlers. That class is only attached once a
+ * word starts moving: `background-clip: text` is a markedly more expensive
+ * paint than flat text, and leaving it on the whole paragraph measurably cost
+ * frames on a slow CPU.
  *
  * When the paragraph is taller than the stage it also drifts upward in step
- * with the fill, so the filling line always stays on screen.
+ * with the reveal, so the word being revealed always stays on screen.
  */
 export default function OneBalance() {
   const trackRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
-  const windowRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const contentRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const lastOffsets = useRef<number[]>([]);
-  const textWidth = useRef(0);
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  /** Last quantised progress written per word; `undefined` means "never written". */
+  const lastStep = useRef<(number | undefined)[]>([]);
 
-  const [lines, setLines] = useState<Line[]>([]);
+  const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ["start start", "end end"] });
 
   const stageHeight = useMotionValue(0);
   const textHeight = useMotionValue(0);
 
-  const renderFill = useCallback(
+  const render = useCallback(
     (progress: number) => {
-      if (!lines.length) return;
-      const dpr = window.devicePixelRatio || 1;
-      const W = textWidth.current;
-      const total = lines.reduce((sum, line) => sum + line.width + FEATHER, 0);
-      let remaining = Math.min(Math.max(progress / FILL_END, 0), 1) * total;
+      for (let i = 0; i < words.length; i++) {
+        // No motion preference: every word goes straight to its finished state.
+        const raw = reduceMotion ? 1 : (progress - i * STEP) / REVEAL;
+        const t = raw <= 0 ? 0 : raw >= 1 ? 1 : ease(raw);
+        const step = Math.round(t * STEPS);
+        if (lastStep.current[i] === step) continue;
 
-      lines.forEach((line, i) => {
-        const length = line.width + FEATHER;
-        const reveal = Math.min(Math.max(remaining, 0), length);
-        remaining -= length;
-        // Right edge of the clipping window; snapped to device pixels so the
-        // window and its counter-shifted contents cancel out exactly (no text shimmer).
-        const offset = Math.round((line.left + reveal - W) * dpr) / dpr;
-        if (lastOffsets.current[i] === offset) return;
-        lastOffsets.current[i] = offset;
-        const win = windowRefs.current[i];
-        const content = contentRefs.current[i];
-        if (win) win.style.transform = `translate3d(${offset}px,0,0)`;
-        if (content) content.style.transform = `translate3d(${-offset}px,0,0)`;
-      });
+        const word = wordRefs.current[i];
+        if (!word) continue;
+        const before = lastStep.current[i];
+        const wasInFlight = before !== undefined && before > 0 && before < STEPS;
+        lastStep.current[i] = step;
+
+        if (step === 0) {
+          // Not reached yet: flat `black-50` text, no gradient and no promoted layer.
+          word.classList.remove("reveal-word");
+          word.style.transform = `scale(${SCALE_FROM})`;
+          word.style.filter = `blur(${BLUR_FROM}em)`;
+          word.style.opacity = `${OPACITY_FROM}`;
+          if (wasInFlight) word.style.willChange = "";
+          continue;
+        }
+
+        const e = step / STEPS;
+        if (!wasInFlight) {
+          word.classList.add("reveal-word");
+          if (step < STEPS) word.style.willChange = "transform, filter, opacity";
+        }
+        word.style.setProperty("--reveal-a", mix(GREEN_TOP, e));
+        word.style.setProperty("--reveal-b", mix(GREEN_BOTTOM, e));
+
+        if (step === STEPS) {
+          // Settled: drop the filter layer entirely rather than leave a blur(0px) behind.
+          word.style.transform = "";
+          word.style.filter = "";
+          word.style.opacity = "";
+          word.style.willChange = "";
+          continue;
+        }
+
+        word.style.transform = `scale(${(SCALE_FROM + (1 - SCALE_FROM) * e).toFixed(4)})`;
+        word.style.filter = `blur(${(BLUR_FROM * (1 - e)).toFixed(4)}em)`;
+        word.style.opacity = (OPACITY_FROM + (1 - OPACITY_FROM) * e).toFixed(3);
+      }
     },
-    [lines],
+    [reduceMotion],
   );
 
-  useMotionValueEvent(scrollYProgress, "change", renderFill);
+  useMotionValueEvent(scrollYProgress, "change", render);
 
-  // Re-apply after lines are (re)measured, before paint, so a resize never flashes the wrong state.
+  // Paint the starting state before the browser's first paint, so the paragraph
+  // never flashes fully revealed on mount.
   useLayoutEffect(() => {
-    lastOffsets.current = [];
-    renderFill(scrollYProgress.get());
-  }, [renderFill, scrollYProgress]);
+    lastStep.current = [];
+    render(scrollYProgress.get());
+  }, [render, scrollYProgress]);
 
-  // Measure where the browser broke the grey paragraph into lines; the green bands follow those lines.
+  // The drift only needs the two heights; the reveal itself is resolution-independent.
   useEffect(() => {
     const stage = stageRef.current;
     const text = textRef.current;
@@ -98,27 +162,6 @@ export default function OneBalance() {
     const measure = () => {
       stageHeight.set(stage.clientHeight);
       textHeight.set(text.offsetHeight);
-      textWidth.current = text.clientWidth;
-
-      const box = text.getBoundingClientRect();
-      const lineHeight = parseFloat(getComputedStyle(text).lineHeight);
-      const next: Line[] = [];
-      text.querySelectorAll<HTMLElement>("[data-word]").forEach((word) => {
-        const r = word.getBoundingClientRect();
-        const index = Math.floor((r.top + r.height / 2 - box.top) / lineHeight);
-        const left = r.left - box.left;
-        const right = r.right - box.left;
-        const line = next[index];
-        if (!line) {
-          next[index] = { top: index * lineHeight, height: lineHeight, left, width: right - left };
-        } else {
-          const lineRight = Math.max(line.left + line.width, right);
-          line.left = Math.min(line.left, left);
-          line.width = lineRight - line.left;
-        }
-      });
-      const measured = next.filter(Boolean);
-      setLines((prev) => (JSON.stringify(prev) === JSON.stringify(measured) ? prev : measured));
     };
 
     measure();
@@ -135,62 +178,33 @@ export default function OneBalance() {
     return PAD_TOP - (text - room) * Math.min(progress / FILL_END, 1);
   });
 
-  const featherMask = `linear-gradient(to right, #000 calc(100% - ${FEATHER}px), transparent)`;
-
   return (
-    // Track height sets the fill speed: the sweep runs across (height − 100vh)
-    // of scrolling. Raise it to slow the fill down further.
+    // Track height sets the reveal speed: the wave runs across (height − 100vh)
+    // of scrolling. Raise it to slow the reveal down further.
     // Section padding spaces it from its neighbours; the pinned track lives
-    // inside it so the fill still starts exactly when the text pins.
+    // inside it so the reveal still starts exactly when the text pins.
     <section className="py-[100px]">
       <div ref={trackRef} className="relative h-[450vh] tablet:h-[600vh]">
-      <div ref={stageRef} className="sticky top-0 h-svh overflow-hidden px-4 tablet:px-10">
-        <motion.div style={{ y }} className="relative mx-auto max-w-[1030px] will-change-transform">
-          <p ref={textRef} className={`${textClass} text-black-50`}>
-            {words.map((word, i) => (
-              <Fragment key={i}>
-                <span data-word>{word}</span>{" "}
-              </Fragment>
-            ))}
-          </p>
-
-          <div aria-hidden className="pointer-events-none absolute inset-0">
-            {lines.map((line, i) => (
-              <div key={i} className="absolute inset-x-0 overflow-hidden" style={{ top: line.top, height: line.height }}>
-                {/* The window is twice the paragraph's width and starts one
-                 * width to the left, so its right edge sits at the paragraph's
-                 * right edge when untranslated. Sliding it only ever moves that
-                 * right edge through the line — its left side stays past the
-                 * line start, so already-filled letters never get uncovered. */}
-                <div
-                  ref={(el) => {
-                    windowRefs.current[i] = el;
-                  }}
-                  className="absolute inset-y-0 -left-full w-[200%] overflow-hidden will-change-transform"
-                  style={{ transform: "translate3d(-50%,0,0)", maskImage: featherMask, WebkitMaskImage: featherMask }}
-                >
-                  {/* Content sits in the window's right half (back at the
-                   * paragraph's own x) and counter-slides to hold the text still. */}
-                  <div
+        <div ref={stageRef} className="sticky top-0 h-svh overflow-hidden px-4 tablet:px-10">
+          <motion.div style={{ y }} className="relative mx-auto max-w-[1030px] will-change-transform">
+            <p ref={textRef} className={`${textClass} text-black-50`}>
+              {words.map((word, i) => (
+                <Fragment key={i}>
+                  {/* inline-block so the word can be scaled; the space between
+                   * words stays outside it so line breaking is untouched. */}
+                  <span
                     ref={(el) => {
-                      contentRefs.current[i] = el;
+                      wordRefs.current[i] = el;
                     }}
-                    className="absolute inset-y-0 left-1/2 w-1/2 will-change-transform"
-                    style={{ transform: "translate3d(100%,0,0)" }}
+                    className="inline-block"
                   >
-                    <p
-                      className={`${textClass} bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-transparent`}
-                      style={{ marginTop: -line.top }}
-                    >
-                      {copy}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
+                    {word}
+                  </span>{" "}
+                </Fragment>
+              ))}
+            </p>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

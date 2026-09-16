@@ -88,6 +88,44 @@ body {
   }
 }
 
+/* Wallet deck marquee. Once the deck has divided into its row, the strip keeps
+ * drifting: identical copies of the five cards tile at exactly the row's pitch,
+ * so translating by one copy's width (--wallet-marquee-shift) lands the next
+ * copy where the last one began and the loop is seamless. Transform-only on an
+ * already-promoted layer, so it runs on the compositor and never repaints the
+ * card copy underneath. Duration is set inline, from the strip's real width, so
+ * the drift reads at the same speed on a phone and on a 1440 frame. */
+@keyframes wallet-deck-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(-1 * var(--wallet-marquee-shift)), 0, 0);
+  }
+}
+
+.wallet-deck-marquee {
+  animation-name: wallet-deck-marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+/* Let a reader stop the strip to finish reading a card. Scoped to the cards
+ * themselves, not the whole stage, so scrolling past with the cursor anywhere
+ * in the section does not freeze it. */
+@media (hover: hover) and (pointer: fine) {
+  .wallet-deck-marquee:has(.wallet-deck-card:hover) {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wallet-deck-marquee {
+    animation: none;
+  }
+}
+
 /* Lenis smooth-scroll setup */
 html.lenis,
 html.lenis body {
@@ -104,4 +142,15 @@ html.lenis body {
 
 .lenis.lenis-stopped {
   overflow: hidden;
+}
+
+/* OneBalance word reveal. Each word paints itself with a gradient whose two
+ * stops are driven from JS, so the grey → green shift needs no second copy of
+ * the text in the DOM (which would double the paragraph for find-in-page,
+ * copy/paste and crawlers). Unset, both stops are the section's resting grey. */
+.reveal-word {
+  background-image: linear-gradient(to bottom, var(--reveal-a, #808080), var(--reveal-b, #808080));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
