@@ -161,6 +161,94 @@ body {
   }
 }
 
+/* OneBalance backdrop, built the way the design builds it: the picture at full
+ * strength with Figma's own mask over it — a 1254x624 rounded rectangle blurred
+ * by 122 and taken down to 10%, exported straight from the file (244:1200).
+ * The mask carries the opacity, so the image needs none of its own, and putting
+ * a higher-resolution picture behind the section means replacing one file.
+ *
+ * Sized in percentages rather than the design's pixel offsets: Figma's mask
+ * canvas is 1742x1112 over a 1612x900 image and the two share a centre, so the
+ * ratios hold at any width. It also means the mask follows the element rather
+ * than the picture, which is what keeps the edges falling away on a phone,
+ * where covering the section crops the picture's own falloff off-screen. */
+.ob-backdrop {
+  -webkit-mask-image: url("/images/one-balance/backdrop-mask.svg");
+  mask-image: url("/images/one-balance/backdrop-mask.svg");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  /* 1742/1612 and 1112/900 */
+  -webkit-mask-size: 108.065% 123.556%;
+  mask-size: 108.065% 123.556%;
+}
+
+/* OneBalance hub (Figma 244:1208). Each chain carries one short bar that runs
+ * from its badge to the orb. The bar rides the chain with `offset-path`, which
+ * is a transform-like property — the browser moves an already-rasterised layer
+ * instead of repainting a stroke dash along the path on every frame, which is
+ * what this section can least afford while the page is scrolling.
+ *
+ * Both ends of each pulse path are extended past the drawn chain: distance 0
+ * sits at the badge's centre and 100% at the orb's, both of which are painted
+ * over the pulse. So a pulse emerges from under its badge, and slides under
+ * the orb and stays there for the rest of the cycle — no fade, and nothing to
+ * animate but the one property. */
+.ob-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 1px;
+  offset-path: var(--ob-path);
+  offset-rotate: auto;
+  animation: ob-pulse var(--ob-period, 4s) linear infinite;
+  animation-delay: var(--ob-delay, 0s);
+}
+
+@keyframes ob-pulse {
+  from {
+    offset-distance: 0%;
+  }
+  /* Reaches the orb at 35% of the cycle and waits there, out of sight, for the
+   * rest — six chains on the same period, staggered, put two or three pulses on
+   * screen at once, which is the density Figma's static frame shows. */
+  35%,
+  to {
+    offset-distance: 100%;
+  }
+}
+
+/* Off-screen the section animates nothing; BalanceHub sets this from an
+ * IntersectionObserver. */
+.ob-idle .ob-pulse {
+  animation-play-state: paused;
+}
+
+/* No motion path, no pulses: the rest of the illustration is complete without
+ * them, and a bar parked at a path's start would read as a stray mark. */
+@supports not (offset-path: path("M0 0H1")) {
+  .ob-pulse {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-pulse {
+    animation: none;
+  }
+
+  /* Leaves exactly the two lit chains Figma draws, at their positions in it. */
+  .ob-pulse:not([data-static]) {
+    display: none;
+  }
+
+  .ob-pulse[data-static] {
+    offset-distance: var(--ob-static);
+  }
+}
+
 /* Lenis smooth-scroll setup */
 html.lenis,
 html.lenis body {
@@ -224,15 +312,4 @@ html.lenis body {
     linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
   background-origin: border-box;
   background-clip: padding-box, border-box;
-}
-
-/* OneBalance word reveal. Each word paints itself with a gradient whose two
- * stops are driven from JS, so the grey → green shift needs no second copy of
- * the text in the DOM (which would double the paragraph for find-in-page,
- * copy/paste and crawlers). Unset, both stops are the section's resting grey. */
-.reveal-word {
-  background-image: linear-gradient(to bottom, var(--reveal-a, #808080), var(--reveal-b, #808080));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
