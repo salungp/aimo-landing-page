@@ -120,9 +120,15 @@ export default function BalanceHub({ className }: { className?: string }) {
       ref={stageRef}
       className={`relative aspect-square w-full max-w-[490px] ${idle ? "ob-idle" : ""} ${className ?? ""}`}
     >
+      {/* Figma fills this card with 2% white over a 22px backdrop blur; it is a
+       * flat colour here instead, at the user's direction. Opaque means the
+       * blur has nothing left to show through, so it goes too — and with it the
+       * only part of this section that was re-blurring a region every frame
+       * while the page scrolled. The inset highlight along the top edge is
+       * unchanged; it is what reads as the card's rim, not the fill. */}
       <div
         aria-hidden
-        className="absolute top-1/2 left-1/2 overflow-hidden rounded-[32px] bg-white/[0.02] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)] backdrop-blur-[22px]"
+        className="absolute top-1/2 left-1/2 overflow-hidden rounded-[32px] bg-[#0C1910] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)]"
         style={{
           width: SIZE,
           height: SIZE,
