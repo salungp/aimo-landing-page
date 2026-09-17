@@ -12,6 +12,7 @@ import clsx from "clsx";
 import Container from "../Container";
 import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
+import WordReveal from "../WordReveal";
 
 type Card = {
   id: string;
@@ -257,14 +258,14 @@ export default function WalletCards() {
 
   const header = (
     <div className="mx-auto flex max-w-[640px] flex-col items-center gap-3 text-center">
-      <TitleReveal>
+      <WordReveal>
         <h2 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
           One wallet for every{" "}
           <span className="block bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-transparent">
             way you trade.
           </span>
         </h2>
-      </TitleReveal>
+      </WordReveal>
       <TitleReveal delay={0.12}>
         <p className="text-base leading-[1.5] text-black-30 tablet:text-lg desktop:text-xl">
           Your AI companion helps you navigate your portfolio, markets and

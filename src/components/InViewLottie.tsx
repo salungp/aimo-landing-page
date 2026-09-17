@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import type { AnimationItem } from "lottie-web";
 
 type InViewLottieProps = {
@@ -9,17 +10,36 @@ type InViewLottieProps = {
   /** The composition's own size (`w` / `h` in the JSON) — sets the aspect ratio before it loads. */
   width: number;
   height: number;
+  /**
+   * Size to the container's own width instead of the component's default
+   * min(100%, 1400px, 90svh) box — for embedding inside a caller-sized frame
+   * (a card, a plate) rather than running a section's own full-bleed scene.
+   * Height still follows `width`/`height`'s aspect ratio either way.
+   */
+  fill?: boolean;
+  /** Merged onto the wrapper; use it to override the default rounding/margin. */
+  className?: string;
+  /**
+   * Frame held for reduced-motion visitors, in the composition's own frame
+   * numbers. Defaults to `STILL_FRAME` (an early, arbitrary moment) — pass one
+   * explicitly when the composition fades in from nothing (an early frame is
+   * blank) or has an obvious "point" it should be caught making.
+   */
+  stillFrame?: number;
 };
 
-/** Frame shown (paused) for reduced-motion users — a moment with content on screen. */
+/** Default frame shown (paused) for reduced-motion users — a moment with content on screen. */
 const STILL_FRAME = 60;
 
 /**
- * A looping Lottie that plays on its own: fills the width up to 1400px (never
- * taller than ~90% of the viewport), with 64px rounded corners and no edge mask.
+ * A looping Lottie that plays on its own. By default it fills the width up to
+ * 1400px (never taller than ~90% of the viewport), with 64px rounded corners
+ * and no edge mask, for a section's own full-bleed scene; pass `fill` to size
+ * to whatever container the caller already built instead — a card or plate
+ * with its own radius and clip.
  *
- * Built for a heavy composition (this one has ~1,700 layers and ~4MB of
- * embedded images):
+ * Built for a heavy composition (the biggest of these has ~1,700 layers and
+ * ~6MB of embedded images):
  * - SVG renderer, via lottie-web's `lottie_svg` build. The canvas renderer
  *   draws this file blank (its track mattes drop every visible layer), and the
  *   smaller `lottie_light` build silently skips effects — this file's 27
@@ -33,7 +53,7 @@ const STILL_FRAME = 60;
  * Nothing is recompressed: vector shapes render at native sharpness and the
  * embedded PNGs are used as-is.
  */
-export default function InViewLottie({ src, width, height }: InViewLottieProps) {
+export default function InViewLottie({ src, width, height, fill, className, stillFrame }: InViewLottieProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -68,7 +88,7 @@ export default function InViewLottie({ src, width, height }: InViewLottieProps) 
       });
       anim.addEventListener("DOMLoaded", () => {
         if (cancelled || !anim) return;
-        if (reduceMotion) anim.goToAndStop(STILL_FRAME, true);
+        if (reduceMotion) anim.goToAndStop(stillFrame ?? STILL_FRAME, true);
         setReady(true);
         tryPlay();
       });
@@ -108,17 +128,21 @@ export default function InViewLottie({ src, width, height }: InViewLottieProps) 
       document.removeEventListener("visibilitychange", onVisibility);
       anim?.destroy();
     };
-  }, [src]);
+  }, [src, stillFrame]);
 
   return (
     <div
       ref={containerRef}
       aria-hidden
-      className="mx-auto overflow-hidden rounded-[64px] transition-opacity duration-500 [&>canvas]:block"
+      className={clsx(
+        "overflow-hidden transition-opacity duration-500 [&>canvas]:block",
+        fill ? "w-full" : "mx-auto rounded-[64px]",
+        className,
+      )}
       style={{
-        // Same box as the section's video: fill the width up to 1400px, but
-        // never taller than ~90% of the viewport.
-        width: `min(100%, 1400px, calc(90svh * ${width / height}))`,
+        // Default box: fill the width up to 1400px, but never taller than
+        // ~90% of the viewport. `fill` defers entirely to the container.
+        width: fill ? undefined : `min(100%, 1400px, calc(90svh * ${width / height}))`,
         aspectRatio: `${width} / ${height}`,
         opacity: ready ? 1 : 0,
       }}

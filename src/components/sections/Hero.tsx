@@ -1,6 +1,9 @@
+"use client";
+
 import Container from "../Container";
 import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
+import WordReveal from "../WordReveal";
 import LoopVideo from "../LoopVideo";
 import AsciiField from "../AsciiField";
 import BrandStrip from "../BrandStrip";
@@ -68,14 +71,14 @@ export default function Hero() {
       <div className="flex flex-1 flex-col justify-end pt-32 pb-8 tablet:justify-center tablet:pt-56 tablet:pb-24">
         <Container>
           <div className="mx-auto flex max-w-[820px] flex-col items-center gap-8 text-center tablet:gap-10">
-            <TitleReveal>
+            <WordReveal>
               <h1 className="text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] text-white tablet:text-[46px] desktop:text-[56px]">
                 <span className="block">One grip for</span>
                 <span className="block">
                   <span className="text-primary">everything</span> you trade.
                 </span>
               </h1>
-            </TitleReveal>
+            </WordReveal>
 
             <TitleReveal delay={0.12}>
               <p className="max-w-[640px] text-base leading-[1.5] text-white/60 tablet:text-lg desktop:text-xl">

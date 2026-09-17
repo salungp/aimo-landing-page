@@ -10,6 +10,14 @@ type InViewLoopVideoProps = {
   /** The source's own size — fixes the box's aspect ratio before anything loads. */
   width: number;
   height: number;
+  /**
+   * Seconds into the clip to hold, paused, for reduced-motion visitors — the
+   * counterpart of InViewLottie's STILL_FRAME. Only needed when the poster is
+   * not itself a representative image: a composition that fades in from nothing
+   * has an empty first frame, and without this those visitors would be left
+   * looking at it. Omit it and the poster simply stays.
+   */
+  stillTime?: number;
   className?: string;
 };
 
@@ -34,10 +42,12 @@ export default function InViewLoopVideo({
   poster,
   width,
   height,
+  stillTime,
   className,
 }: InViewLoopVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [sourced, setSourced] = useState(false);
+  const [showingStill, setShowingStill] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -50,6 +60,19 @@ export default function InViewLoopVideo({
       if (reduceMotion || !visible || document.hidden) return;
       video.play().catch(() => {});
     };
+
+    // Seek to the still and only then drop the poster: a video that has been
+    // seeked but never played still shows its poster, so swapping the two in
+    // the other order would flash the empty first frame.
+    const onLoadedData = () => {
+      video.currentTime = stillTime as number;
+    };
+    const onSeeked = () => setShowingStill(true);
+
+    if (reduceMotion && stillTime !== undefined) {
+      video.addEventListener("loadeddata", onLoadedData, { once: true });
+      video.addEventListener("seeked", onSeeked, { once: true });
+    }
 
     // Fetch nothing until the section is within a screen of the viewport.
     const near = new IntersectionObserver(
@@ -87,8 +110,10 @@ export default function InViewLoopVideo({
       onScreen.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
       video.removeEventListener("canplay", tryPlay);
+      video.removeEventListener("loadeddata", onLoadedData);
+      video.removeEventListener("seeked", onSeeked);
     };
-  }, []);
+  }, [stillTime]);
 
   // `preload="none"` keeps the element quiet until the sources appear, so this
   // has to ask for the fetch itself once they do.
@@ -110,7 +135,7 @@ export default function InViewLoopVideo({
       loop
       playsInline
       preload="none"
-      poster={sourced ? poster : undefined}
+      poster={sourced && !showingStill ? poster : undefined}
       className={className}
       width={width}
       height={height}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Container from "../Container";
 import Reveal from "../Reveal";
-import TitleReveal from "../TitleReveal";
+import WordReveal from "../WordReveal";
 
 type Item = {
   question: string;
@@ -63,14 +63,14 @@ export default function FAQ() {
     <section id="faq" className="py-20 tablet:py-28 desktop:py-20">
       <Container>
         <div className="flex flex-col items-start gap-10 tablet:gap-12 desktop:flex-row desktop:gap-0">
-          <TitleReveal className="desktop:w-[436px] desktop:shrink-0">
+          <WordReveal className="desktop:w-[436px] desktop:shrink-0">
             <h2 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
               Questions?{" "}
               <span className="block bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-transparent">
                 Answers.
               </span>
             </h2>
-          </TitleReveal>
+          </WordReveal>
 
           <div className="flex w-full flex-col gap-3 desktop:w-[564px] desktop:shrink-0">
             {items.map((item, i) => (

@@ -5,13 +5,18 @@
  *
  * Needs the dev server running (the JSON is fetched from it, same-origin).
  *
- *   node scripts/render-lottie.mjs <out.mp4> <json-path> <w> <h> <srcFps> <frames> <outFps>
+ *   node scripts/render-lottie.mjs <out.mp4> <json-path> <w> <h> <srcFps> <frames> <outFps> [outW]
  *
  * e.g. the mobile markets scene — 574x1241, 60fps, 1680 frames, out at 30:
  *   node scripts/render-lottie.mjs /tmp/m.mp4 /lottie/markets-together-mobile-2.json 574 1241 60 1680 30
  *
  * Renders at deviceScaleFactor 2, i.e. exactly twice the composition, so the
  * vectors are never resampled and the result holds up on a 3x phone screen.
+ * That is also the encode size unless `outW` is given, which downscales on the
+ * way into ffmpeg — worth it when the element is far smaller than 2x the
+ * composition, since the surplus detail is then paid for in bitrate and decode
+ * work for a sharpness no screen can show. Downscaling from the 2x render
+ * rather than rendering small keeps the supersampling.
  * Then: poster with `ffmpeg -vf select=eq(n\,0)` piped through `cwebp`.
  */
 import { chromium } from "/Users/salungprastyo/Documents/aimo-landing-page/node_modules/playwright/index.mjs";
@@ -24,14 +29,20 @@ const H = +process.argv[5];
 const SRC_FPS = +process.argv[6];
 const TOTAL = +process.argv[7];
 const FPS = +process.argv[8];
+// Optional encode width; height follows the aspect ratio, rounded to even (h264
+// needs both dimensions divisible by 2 under yuv420p).
+const OUT_W = +process.argv[9] || 0;
 const LOTTIE = "/Users/salungprastyo/Documents/aimo-landing-page/node_modules/lottie-web/build/player/lottie_svg.min.js";
 
 const step = SRC_FPS / FPS;
 const frames = Math.round(TOTAL / step);
 
+const scale = OUT_W ? ["-vf", `scale=${OUT_W}:-2:flags=lanczos`] : [];
+
 const ff = spawn("ffmpeg", [
   "-y", "-v", "error",
   "-f", "image2pipe", "-vcodec", "png", "-framerate", String(FPS), "-i", "-",
+  ...scale,
   "-c:v", "libx264", "-preset", "slow", "-crf", "27",
   "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.2",
   // Every frame a candidate for the loop restart; no B-frame reordering delay.

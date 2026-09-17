@@ -1,6 +1,9 @@
+"use client";
+
 import Container from "../Container";
 import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
+import WordReveal from "../WordReveal";
 import BalanceHub from "../one-balance/BalanceHub";
 
 /**
@@ -39,14 +42,14 @@ export default function OneBalance() {
               </p>
             </TitleReveal>
 
-            <TitleReveal delay={0.05}>
+            <WordReveal delay={0.05}>
               <h2 className="text-[32px] leading-[normal] font-semibold tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
                 <span className="block bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-transparent">
                   One balance.
                 </span>
                 Everything onchain.
               </h2>
-            </TitleReveal>
+            </WordReveal>
 
             <Reveal from="up" delay={0.1}>
               <p className="text-base leading-[1.5] tracking-normal text-black-50 tablet:text-lg desktop:text-[20px]">

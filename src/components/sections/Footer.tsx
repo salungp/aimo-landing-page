@@ -1,8 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import Container from "../Container";
 import HalftoneField from "../HalftoneField";
 import Reveal from "../Reveal";
+import WordReveal from "../WordReveal";
 import logo from "../../../public/images/shared/logo-primary.svg";
 
 // Icons are stored as components (not pre-built JSX elements) and given an
@@ -116,11 +119,13 @@ function CtaBanner() {
 function CtaCopy() {
   return (
     <div className="flex flex-col gap-1.5">
-      <h2 className="text-[36px] leading-[1.1] font-semibold tracking-[-0.02em] text-ink tablet:text-[40px] desktop:text-[48px]">
-        Everything you trade.
-        <br />
-        One place to hold it.
-      </h2>
+      <WordReveal>
+        <h2 className="text-[36px] leading-[1.1] font-semibold tracking-[-0.02em] text-ink tablet:text-[40px] desktop:text-[48px]">
+          Everything you trade.
+          <br />
+          One place to hold it.
+        </h2>
+      </WordReveal>
       <p className="text-sm leading-[1.5] tracking-[-0.01em] text-ink/70">
         Multiple markets. Connected wallets. One AIMO.
       </p>

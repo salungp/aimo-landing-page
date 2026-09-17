@@ -1,67 +1,128 @@
+"use client";
+
 import Container from "../Container";
 import InViewLottie from "../InViewLottie";
-import InViewLoopVideo from "../InViewLoopVideo";
+import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
+import WordReveal from "../WordReveal";
 
+/**
+ * Figma 258:10911 — the section inverts: instead of light type on the dark
+ * page, a bright green card is inset 12px into it and everything on top is
+ * near-black. The illustration keeps the left, the copy the right.
+ *
+ * The design's own inset is 20px (its card is 860 in a 900 frame); this build
+ * uses a tighter 12px gutter instead, so the pinned card runs a few pixels
+ * taller than the design's own ratio — a deliberate departure, not a miss.
+ *
+ * From `desktop` the card is a full viewport tall (less 12px top and bottom)
+ * and pins there for half a screen of extra scrolling before moving on.
+ *
+ * The card is a background layer rather than a wrapper around the content, so
+ * the copy stays on `Container`'s grid and lines up with every other section.
+ * Container's own padding — 220px at desktop, 460px at wide — is what lands
+ * the design's illustration and text columns, independent of the card's own
+ * inset: the same 490 / 50 / 460 split as OneBalance, off the same 1000px
+ * column.
+ *
+ * There is no mobile or tablet frame for this design, and below `desktop` the
+ * two halves stack: the copy alone is most of a phone screen, so a pinned
+ * viewport there would leave the scene a few hundred pixels tall. Below that
+ * breakpoint the section keeps its natural height and does not pin, and the
+ * content takes an extra 12px inside the card on the smallest screens — the
+ * same 12px the card keeps outside itself — where Container's own gutter
+ * would otherwise put the text flush against its edge.
+ */
 export default function MarketsTogether() {
   return (
-    // Sticky: the media pins to the centre of the screen when the section
-    // arrives and holds for about half a screen of extra scrolling, then
-    // moves on. The pinned stage centres it with room above and below, so the
-    // section needs no padding of its own. overflow-x-clip (not hidden) keeps
-    // sticky working.
+    // overflow-x-clip, not hidden: `hidden` on an ancestor silently kills
+    // position: sticky below.
     <section className="overflow-x-clip">
-      <div className="relative h-[150vh]">
-      <div className="sticky top-0 flex h-svh items-center justify-center">
-      {/* Mobile: the portrait scene, pre-rendered from its Lottie (Scene-6,
-          574 × 1241) at 2x and 30fps. Phones paid twice for the Lottie — 5.3MB
-          of JSON parsed on the main thread, then ~2,800 SVG nodes re-rasterised
-          every frame, 27 of them behind Gaussian blur filters for the glows.
-          The video is a fraction of the bytes and the hardware decoder does all
-          of the work. Hidden from tablet up: a display:none element never
-          intersects the viewport, so nothing here is fetched there. */}
-      <div className="w-full tablet:hidden">
-        {/* Same box as the Lottie it replaces: fill the width up to 1400px, but
-            never taller than ~90% of the viewport. The clip lives on the
-            wrapper rather than the video, which older Safari does not round. */}
-        <div className="mx-auto overflow-hidden rounded-[64px] w-[min(100%,1400px,calc(90svh*574/1241))]">
-          <InViewLoopVideo
-            mp4="/video/markets-together-mobile.mp4"
-            poster="/video/markets-together-mobile-poster.webp"
-            width={574}
-            height={1241}
-            className="block h-auto w-full"
-          />
+      {/* The track is half a screen taller than the pin, and that difference is
+       * exactly how long the card holds before it scrolls away. */}
+      <div className="relative desktop:h-[150svh]">
+        <div className="desktop:sticky desktop:top-0">
+          <div className="relative isolate flex items-center py-20 tablet:py-28 desktop:h-svh desktop:py-0">
+            {/* The card. Vertical gradient sampled off the design's render: it
+             * starts on the brand green and turns over at the halfway mark,
+             * which a two-stop ramp does not reproduce. The texture over it is
+             * .mt-texture in globals.css — black at the design's 14.1%, shaped
+             * by the exported mask. */}
+            <div
+              aria-hidden
+              className="absolute inset-y-0 right-3 left-3 -z-10 overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#A7F932_0%,#79C60C_50%,#4D7A0D_100%)] desktop:inset-y-3"
+            >
+              <div className="mt-texture absolute inset-0 bg-black opacity-[0.141]" />
+            </div>
+
+            <Container>
+              {/* Copy first in the DOM so the heading leads on a phone and for
+               * anything reading the page in order; `row-reverse` puts the scene
+               * back on the left once the two sit side by side. */}
+              <div className="flex flex-col items-start gap-12 px-3 tablet:px-0 desktop:flex-row-reverse desktop:items-center desktop:gap-[50px]">
+                <div className="flex flex-col gap-3 desktop:w-[460px] desktop:shrink-0">
+                  <TitleReveal>
+                    <p className="font-mono text-xs leading-[1.5] font-medium tracking-[0.04em] text-ink uppercase tablet:text-[13px] desktop:text-sm">
+                      AI Insights
+                    </p>
+                  </TitleReveal>
+
+                  <WordReveal delay={0.05}>
+                    <h2 className="text-[32px] leading-[normal] font-semibold tracking-[-0.02em] text-ink tablet:text-[40px] desktop:text-[48px]">
+                      <span className="block">AI that notices.</span>
+                      And acts with you.
+                    </h2>
+                  </WordReveal>
+
+                  <Reveal from="up" delay={0.1}>
+                    <p className="text-base leading-[1.5] tracking-normal text-ink tablet:text-lg desktop:text-[20px]">
+                      Aimo watches every wallet and position you hold. When your
+                      exposure drifts, it tells you what shifted, why it matters,
+                      and what to do about it then runs the trade the moment you
+                      confirm, without ever leaving the app.
+                    </p>
+                  </Reveal>
+                </div>
+
+                <Reveal from="up" delay={0.15} amount={0.2} className="w-full desktop:w-[490px] desktop:shrink-0">
+                  {/* The design's plate for the illustration: a 490px square, 32px
+                   * radius, its own dark gradient and the hairline top highlight
+                   * the OneBalance hub carries. Figma also gives it
+                   * backdrop-blur-22, which is left off — nothing shows through an
+                   * opaque scene, and it would be a real per-frame cost while the
+                   * page scrolls.
+                   *
+                   * Once the card is pinned to the viewport the square has to fit
+                   * inside it, so from desktop it also gives up whatever a short
+                   * window cannot spare while keeping 165px clear above and below
+                   * — the design's own margin. The cap only bites under ~820px of
+                   * viewport; at the design's 900 it stays 490. */}
+                  <div className="mx-auto w-full max-w-[490px] overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#2C3D13_0%,#4F7C0E_100%)] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)] desktop:max-w-[min(490px,calc(100svh-330px))]">
+                    {/* The scene itself, played straight from the source Lottie —
+                     * no video conversion. Same file the OneBalance-era Lotties
+                     * were (6MB, ~300 embedded images), so it costs what those
+                     * cost: see InViewLottie for the SVG-renderer and
+                     * only-load-when-near tradeoffs that make that affordable. */}
+                    <InViewLottie
+                      src="/lottie/markets-together.json"
+                      width={1130}
+                      height={1129}
+                      fill
+                      // The scene fades up from an empty frame, so the component's
+                      // own default still (an early, arbitrary frame) would leave
+                      // a reduced-motion visitor looking at nothing. Frame 522 is
+                      // the insight itself: what changed, why it matters, and the
+                      // suggestion, all on screen at once — the same moment the
+                      // video version parked on.
+                      stillFrame={522}
+                    />
+                  </div>
+                </Reveal>
+              </div>
+            </Container>
+          </div>
         </div>
       </div>
-
-      {/* Tablet / desktop: the Lottie scene (Scene-4, 1948 × 1129). Hidden on
-          mobile, where it's likewise never fetched. */}
-      <div className="hidden w-full tablet:block">
-        <InViewLottie src="/lottie/markets-together-desktop.json" width={1948} height={1129} />
-      </div>
-      </div>
-      </div>
-
-      {/* <Container>
-        <div className="mx-auto mt-4 flex max-w-[720px] flex-col items-center gap-3 text-center tablet:mt-0">
-          <TitleReveal>
-            <h2 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
-              Your markets shouldn&apos;t live in{" "}
-              <span className="bg-gradient-to-b from-primary to-primary-dark bg-clip-text text-transparent">
-                separate worlds.
-              </span>
-            </h2>
-          </TitleReveal>
-          <TitleReveal delay={0.12}>
-            <p className="text-base leading-[1.5] text-black-40 tablet:text-lg desktop:text-xl">
-              AIMO brings your trading experience together, so you can move,
-              trade and track everything without constantly switching between
-              platforms.
-            </p>
-          </TitleReveal>
-        </div>
-      </Container> */}
     </section>
   );
 }
