@@ -38,12 +38,15 @@ const step = SRC_FPS / FPS;
 const frames = Math.round(TOTAL / step);
 
 const scale = OUT_W ? ["-vf", `scale=${OUT_W}:-2:flags=lanczos`] : [];
+// Quality knob. 27 suits a phone-sized encode; a scene shown larger wants a
+// lower number (CRF=21 node scripts/render-lottie.mjs ...).
+const CRF = process.env.CRF || "27";
 
 const ff = spawn("ffmpeg", [
   "-y", "-v", "error",
   "-f", "image2pipe", "-vcodec", "png", "-framerate", String(FPS), "-i", "-",
   ...scale,
-  "-c:v", "libx264", "-preset", "slow", "-crf", "27",
+  "-c:v", "libx264", "-preset", "slow", "-crf", CRF,
   "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.2",
   // Every frame a candidate for the loop restart; no B-frame reordering delay.
   "-g", String(FPS * 4), "-movflags", "+faststart",

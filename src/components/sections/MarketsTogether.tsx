@@ -2,7 +2,6 @@
 
 import Container from "../Container";
 import InViewLoopVideo from "../InViewLoopVideo";
-import InViewLottie from "../InViewLottie";
 import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
 import WordReveal from "../WordReveal";
@@ -47,13 +46,14 @@ export default function MarketsTogether() {
             {/* The card. Vertical gradient sampled off the design's render: it
              * starts on the brand green and turns over at the halfway mark,
              * which a two-stop ramp does not reproduce. The texture over it is
-             * .mt-texture in globals.css — black at the design's 14.1%, shaped
-             * by the exported mask. */}
+             * .mt-texture in globals.css — the design's chevrons, already black
+             * at its 14.1%, as one flat picture rather than a live CSS mask over
+             * a black layer (see that rule: the mask cost Firefox this section). */}
             <div
               aria-hidden
               className="absolute inset-y-0 right-3 left-3 -z-10 overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#A7F932_0%,#79C60C_50%,#4D7A0D_100%)] desktop:inset-y-3"
             >
-              <div className="mt-texture absolute inset-0 bg-black opacity-[0.141]" />
+              <div className="mt-texture absolute inset-0" />
             </div>
 
             <Container>
@@ -99,46 +99,61 @@ export default function MarketsTogether() {
                    * — the design's own margin. The cap only bites under ~820px of
                    * viewport; at the design's 900 it stays 490. */}
                   <div className="mx-auto w-full max-w-[490px] overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#2C3D13_0%,#4F7C0E_100%)] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)] desktop:max-w-[min(490px,calc(100svh-330px))]">
-                    {/* Below `tablet`: a pre-rendered video, not the live Lottie.
-                     * The scene is 6MB of JSON and ~300 embedded images; the SVG
-                     * renderer re-rasterises every layer — several behind blur
-                     * filters — on every frame, which desktop/tablet hardware
-                     * shrugs off but a phone visibly can't (reported laggy on
-                     * request 2026-09-17). Rendered at 660px, 2x the plate's own
-                     * ~329px mobile width, so nothing here outruns a phone screen's
-                     * own resolution; see scripts/render-lottie.mjs's `outW`. */}
+                    {/* A pre-rendered video at every breakpoint, not the live
+                     * Lottie. Both encodes come from /lottie/markets-together.json,
+                     * which is now a build-time source only — nothing fetches it
+                     * at runtime. It renders to ~2,080 SVG nodes behind 300 masks
+                     * and 8 Gaussian blurs, and the SVG renderer re-rasterises
+                     * all of it every frame. A phone visibly couldn't (reported
+                     * 2026-09-17), and Safari can't either at any size: measured
+                     * in WebKit at 1440x900, scrolling this section ran at 24fps
+                     * with frames up to 137ms, against a clean 60fps with the
+                     * same SVG merely `visibility: hidden` — so the cost is
+                     * rasterising it, which no amount of cheaper JS would have
+                     * touched (reported 2026-09-18).
+                     *
+                     * Two encodes because the plate is two very different sizes:
+                     * 660px is 2x its ~329px mobile width, 980px is 2x the 490px
+                     * it reaches from `tablet` up, so neither breakpoint pays for
+                     * detail its screen can't show. See scripts/render-lottie.mjs
+                     * and its `outW` / `CRF`; the desktop encode is CRF 21 rather
+                     * than the phone's 27 because it's shown that much larger,
+                     * and the two land at 957KB and 345KB against the JSON's
+                     * 4.1MB. Checked frame for frame against the Lottie's own
+                     * render at five points across the scene: 980px is PSNR
+                     * 46.3-47.7dB / SSIM 0.9972-0.9980, 660px is PSNR
+                     * 44.4-46.8dB / SSIM 0.9946-0.9972. The composition is fully
+                     * opaque (checked against a magenta backdrop), so h264's
+                     * yuv420p loses nothing, and its last frame matches its first
+                     * to 63dB, so the loop needs no crossfade. */}
                     <div className="tablet:hidden">
                       <InViewLoopVideo
                         mp4="/video/markets-together-mobile.mp4"
                         poster="/video/markets-together-mobile-poster.webp"
                         width={660}
                         height={660}
-                        // Same reasoning as the Lottie's stillFrame below — the
-                        // scene fades up from an empty frame, so a reduced-motion
-                        // visitor needs a real moment, not the first one.
-                        stillTime={8.7}
+                        // The scene fades up from an empty frame, so a
+                        // reduced-motion visitor needs a real moment, not the
+                        // first one. This scene runs a longer story than the one
+                        // it replaced — portfolio, insight, amount, confirm,
+                        // pending — and 10.83s is frame 650 of the 60fps source,
+                        // where the insight is complete: what changed, why it
+                        // matters, the suggestion and its portfolio impact, all
+                        // on screen at once. (The previous export had that
+                        // moment at frame 522.)
+                        stillTime={10.83}
                         className="block h-auto w-full"
                       />
                     </div>
 
-                    {/* `tablet` and up: the scene itself, played straight from the
-                     * source Lottie — no video conversion. Desktop/tablet hardware
-                     * has no trouble with the same file's cost: see InViewLottie
-                     * for the SVG-renderer and only-load-when-near tradeoffs that
-                     * make that affordable there. */}
                     <div className="hidden tablet:block">
-                      <InViewLottie
-                        src="/lottie/markets-together.json"
-                        width={1130}
-                        height={1129}
-                        fill
-                        // The scene fades up from an empty frame, so the component's
-                        // own default still (an early, arbitrary frame) would leave
-                        // a reduced-motion visitor looking at nothing. Frame 522 is
-                        // the insight itself: what changed, why it matters, and the
-                        // suggestion, all on screen at once — the same moment the
-                        // video version parked on.
-                        stillFrame={522}
+                      <InViewLoopVideo
+                        mp4="/video/markets-together-desktop.mp4"
+                        poster="/video/markets-together-desktop-poster.webp"
+                        width={980}
+                        height={980}
+                        stillTime={10.83}
+                        className="block h-auto w-full"
                       />
                     </div>
                   </div>

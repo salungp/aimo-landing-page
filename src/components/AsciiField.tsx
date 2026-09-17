@@ -68,6 +68,26 @@ const FIELD_OPTIONS = {
   lineHeight: 1.12,
 };
 
+// The same ellipse the layer used to carry as a CSS mask —
+// `radial-gradient(54% 40% at 50% 50%, transparent 0%, rgba(0,0,0,0.55) 46%,
+// #000 88%)`, whose alpha channel is what did the masking. Handed to the
+// engine instead, which applies it to the field's own alpha as one composited
+// fill per frame. A CSS mask on this element costs a masking pass over the
+// whole layer every time the canvas changes, and the canvas changes 60 times a
+// second — on top of the screen blend over the video underneath, that was the
+// hero's most expensive property in Safari.
+const CENTER_FADE = {
+  cx: 0.5,
+  cy: 0.5,
+  rx: 0.54,
+  ry: 0.4,
+  stops: [
+    [0, 0],
+    [0.46, 0.55],
+    [0.88, 1],
+  ],
+};
+
 export default function AsciiField({
   className,
   opacity = 1,
@@ -77,9 +97,11 @@ export default function AsciiField({
 }: AsciiFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const optionsRef = useRef(options);
+  const centerFadeRef = useRef(centerFade);
 
   useEffect(() => {
     optionsRef.current = options;
+    centerFadeRef.current = centerFade;
   });
 
   useEffect(() => {
@@ -87,14 +109,11 @@ export default function AsciiField({
     if (!canvas) return;
     const field: FieldHandle | null = createAsciiField(canvas, {
       ...FIELD_OPTIONS,
+      fade: centerFadeRef.current ? CENTER_FADE : null,
       ...optionsRef.current,
     });
     return () => field?.destroy();
   }, []);
-
-  const fade = centerFade
-    ? "radial-gradient(54% 40% at 50% 50%, transparent 0%, rgba(0,0,0,0.55) 46%, #000 88%)"
-    : undefined;
 
   return (
     <div className={className} aria-hidden="true">
@@ -106,8 +125,6 @@ export default function AsciiField({
           height: "100%",
           opacity,
           mixBlendMode: blend,
-          maskImage: fade,
-          WebkitMaskImage: fade,
         }}
       />
     </div>

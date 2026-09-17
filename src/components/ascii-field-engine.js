@@ -29,7 +29,14 @@ function createAsciiField(canvas, options) {
     tracking: 1,       // column width as a multiple of the glyph advance (<1 packs tighter)
     lineHeight: 1.32,  // row height as a multiple of the cell size
     maxDpr: 2,
-    clickRipples: true
+    clickRipples: true,
+    // Optional falloff applied to the field's own alpha, as an ellipse in
+    // fractions of the canvas: { cx, cy, rx, ry, stops: [[offset, alpha], ...] }.
+    // This is deliberately not a CSS mask on the element: a mask makes the
+    // browser re-run a masking pass over the whole layer every time the canvas
+    // changes, which here is every frame. Done inside the canvas it is one
+    // composited fill, and the result is the same pixels.
+    fade: null
   };
   var k;
   if (options) for (k in options) if (options[k] !== undefined) o[k] = options[k];
@@ -42,6 +49,15 @@ function createAsciiField(canvas, options) {
   var glitch = new Float32Array(0);
   var lut = [], lutKey = "";
   var ripples = [];
+  // Glyph atlas: every ramp character pre-rendered once in every bucket colour,
+  // so a frame is ~3,000 blits instead of ~3,000 fillText calls. Text drawing
+  // is the single most expensive thing this loop used to do — WebKit in
+  // particular shapes and rasterises per call — and a blit from a cached canvas
+  // skips all of it.
+  var atlas = null, atlasKey = "";
+  var tileW = 0, tileH = 0, tileOX = 0, tileOY = 0;
+  var colPX = null, rowPY = null;
+  var fadeGrad = null, fadeGradKey = "";
   var t = 0, last = 0, raf = 0;
   var running = true, onScreen = true, paused = false, measuredCell = 0;
   var fps = 0, fpsAcc = 0, fpsN = 0;
@@ -49,13 +65,23 @@ function createAsciiField(canvas, options) {
   var fontFamily = o.fontFamily;
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var coarse = window.matchMedia("(pointer: coarse)").matches;
-  var pointer = { x: -1e5, y: -1e5, px: -1e5, py: -1e5, inside: false, cx: 0, cy: 0 };
+  var pointer = {
+    x: -1e5, y: -1e5, px: -1e5, py: -1e5, inside: false, cx: 0, cy: 0,
+    clientX: -1e5, clientY: -1e5, pending: false
+  };
 
   /* ---------- value noise ---------- */
-  function hash3(x, y, z) {
-    var n = (x * 1597334677) ^ (y * 3812015801) ^ (z * 2654435761);
+  // The three coordinate terms only ever meet through XOR, so each can be
+  // multiplied out on its own and reused. `hmix` is hash3's tail, the part
+  // that genuinely has to run per lattice corner; hash3 stays for the callers
+  // that don't march a grid.
+  var HX = 1597334677, HY = 3812015801, HZ = 2654435761;
+  function hmix(n) {
     n = Math.imul(n ^ (n >>> 13), 1274126177);
     return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  }
+  function hash3(x, y, z) {
+    return hmix((x * HX) ^ (y * HY) ^ (z * HZ));
   }
   function smooth(a) { return a * a * (3 - 2 * a); }
   function vnoise(x, y, z) {
@@ -75,6 +101,80 @@ function createAsciiField(canvas, options) {
          + vnoise(x * 2.03, y * 2.03, z * 1.7) * 0.2667
          + vnoise(x * 4.11, y * 4.11, z * 2.6) * 0.1333
          + vnoise(x * 8.07, y * 8.07, z * 3.4) * 0.0667;
+  }
+
+  /* ---------- the same fbm, precomputed for a grid ----------
+   * Every cell in a frame samples the field at the same handful of
+   * coordinates: column x always at `x * cw * freq * octave`, row y always at
+   * `y * ch * freq * octave`, and z fixed for the whole frame. So the floor,
+   * the smoothstep and the coordinate multiply — twelve of each per cell,
+   * across four octaves — are hoisted into per-column and per-row tables, and
+   * only the eight corner mixes per octave are left in the loop. Bit for bit
+   * the same numbers as fbm(); the arithmetic is in the same order.
+   * `repel` moves a cell off its own column and row, so that mode keeps using
+   * fbm() directly. */
+  var NOCT = 4;
+  var OCT_XY = [1, 2.03, 4.11, 8.07];
+  var OCT_Z = [1, 1.7, 2.6, 3.4];
+  var OCT_W = [0.5333, 0.2667, 0.1333, 0.0667];
+  var nxa = null, nxb = null, nxf = null;
+  var nya = null, nyb = null, nyf = null;
+  var nza = new Int32Array(NOCT), nzb = new Int32Array(NOCT), nzf = new Float64Array(NOCT);
+  var noiseKey = "";
+
+  function buildNoiseTables() {
+    var freq = 1 / (o.scale * 1.6);
+    var key = cols + "|" + rows + "|" + cw + "|" + ch + "|" + freq;
+    if (key === noiseKey) return;
+    noiseKey = key;
+    nxa = new Int32Array(NOCT * cols); nxb = new Int32Array(NOCT * cols);
+    nxf = new Float64Array(NOCT * cols);
+    nya = new Int32Array(NOCT * rows); nyb = new Int32Array(NOCT * rows);
+    nyf = new Float64Array(NOCT * rows);
+    for (var m = 0; m < NOCT; m++) {
+      var oct = OCT_XY[m], bx = m * cols, by = m * rows, i, v, vi;
+      for (i = 0; i < cols; i++) {
+        v = i * cw * freq * oct; vi = Math.floor(v);
+        nxa[bx + i] = (vi * HX) | 0;
+        nxb[bx + i] = ((vi + 1) * HX) | 0;
+        nxf[bx + i] = smooth(v - vi);
+      }
+      for (i = 0; i < rows; i++) {
+        v = i * ch * freq * oct; vi = Math.floor(v);
+        nya[by + i] = (vi * HY) | 0;
+        nyb[by + i] = ((vi + 1) * HY) | 0;
+        nyf[by + i] = smooth(v - vi);
+      }
+    }
+  }
+
+  // z is the only coordinate that moves between frames.
+  function advanceNoiseZ() {
+    for (var m = 0; m < NOCT; m++) {
+      var v = t * OCT_Z[m], vi = Math.floor(v);
+      nza[m] = (vi * HZ) | 0;
+      nzb[m] = ((vi + 1) * HZ) | 0;
+      nzf[m] = smooth(v - vi);
+    }
+  }
+
+  function fbmGrid(col, row) {
+    var sum = 0;
+    for (var m = 0; m < NOCT; m++) {
+      var bx = m * cols + col, by = m * rows + row;
+      var ha = nxa[bx], hb = nxb[bx], ja = nya[by], jb = nyb[by];
+      var ka = nza[m], kb = nzb[m];
+      var xf = nxf[bx], yf = nyf[by], zf = nzf[m];
+      var c000 = hmix(ha ^ ja ^ ka), c100 = hmix(hb ^ ja ^ ka);
+      var c010 = hmix(ha ^ jb ^ ka), c110 = hmix(hb ^ jb ^ ka);
+      var c001 = hmix(ha ^ ja ^ kb), c101 = hmix(hb ^ ja ^ kb);
+      var c011 = hmix(ha ^ jb ^ kb), c111 = hmix(hb ^ jb ^ kb);
+      var x00 = c000 + (c100 - c000) * xf, x10 = c010 + (c110 - c010) * xf;
+      var x01 = c001 + (c101 - c001) * xf, x11 = c011 + (c111 - c011) * xf;
+      var y0 = x00 + (x10 - x00) * yf, y1 = x01 + (x11 - x01) * yf;
+      sum += (y0 + (y1 - y0) * zf) * OCT_W[m];
+    }
+    return sum;
   }
 
   /* ---------- colour ---------- */
@@ -105,9 +205,100 @@ function createAsciiField(canvas, options) {
     }
   }
 
-  /* ---------- render buckets ---------- */
-  var bChar = [], bX = [], bY = [], bN = new Int32Array(N_BUCKETS);
-  for (var i = 0; i < N_BUCKETS; i++) { bChar.push([]); bX.push([]); bY.push([]); }
+  /* ---------- glyph atlas ----------
+   * One tile per (ramp character, bucket colour), laid out glyph across and
+   * colour down, in device pixels. A frame then costs one drawImage per cell
+   * instead of a fillText, and nothing has to be sorted into colour runs
+   * first: the colour is which row of the atlas gets blitted.
+   *
+   * The tile is sized to the ramp's own ink rather than to the cell, because
+   * these glyphs are thin marks and every transparent pixel in a tile is
+   * still blended once per cell drawn. */
+  function buildAtlas() {
+    var key = dpr + "|" + o.cell + "|" + o.fontWeight + "|" + fontFamily + "|" + o.ramp + "|" + lutKey;
+    if (atlas && key === atlasKey) return;
+    atlasKey = key;
+
+    var chars = o.ramp, L = chars.length;
+    if (!atlas) atlas = document.createElement("canvas");
+    var a = atlas.getContext("2d");
+    // Drawn at device size instead of under a dpr transform, so a tile is a
+    // whole number of device pixels and every blit lands 1:1.
+    var font = o.fontWeight + " " + o.cell * dpr + "px " + fontFamily;
+    a.font = font;
+    a.textBaseline = "middle";
+
+    var left = 0, right = 0, up = 0, down = 0, c, tm;
+    for (c = 0; c < L; c++) {
+      if (chars.charCodeAt(c) === 32) continue;
+      tm = a.measureText(chars.charAt(c));
+      if (tm.actualBoundingBoxRight === undefined) {
+        // No ink metrics: fall back to a cell-sized tile all round.
+        left = right = up = down = o.cell * dpr;
+        break;
+      }
+      if (tm.actualBoundingBoxLeft > left) left = tm.actualBoundingBoxLeft;
+      if (tm.actualBoundingBoxRight > right) right = tm.actualBoundingBoxRight;
+      if (tm.actualBoundingBoxAscent > up) up = tm.actualBoundingBoxAscent;
+      if (tm.actualBoundingBoxDescent > down) down = tm.actualBoundingBoxDescent;
+    }
+    // A pixel of slack each side for the antialiasing the ink bounds exclude.
+    tileOX = Math.ceil(left) + 1;
+    tileOY = Math.ceil(up) + 1;
+    tileW = Math.max(1, tileOX + Math.ceil(right) + 1);
+    tileH = Math.max(1, tileOY + Math.ceil(down) + 1);
+
+    atlas.width = L * tileW;
+    atlas.height = N_BUCKETS * tileH;
+    a.font = font;              // sizing the canvas cleared the state
+    a.textBaseline = "middle";
+    for (var b = 0; b < N_BUCKETS; b++) {
+      a.fillStyle = lut[b];
+      for (c = 0; c < L; c++) {
+        if (chars.charCodeAt(c) === 32) continue;
+        a.fillText(chars.charAt(c), c * tileW + tileOX, b * tileH + tileOY);
+      }
+    }
+    buildCellPositions();
+  }
+
+  /* Where each column and row blits to, snapped to whole device pixels so the
+   * tiles are never resampled — which also puts the glyphs on a sharper grid
+   * than fillText's own subpixel placement did. */
+  function buildCellPositions() {
+    colPX = new Float64Array(cols);
+    rowPY = new Float64Array(rows);
+    for (var x = 0; x < cols; x++) colPX[x] = Math.round(x * cw * dpr - tileOX) / dpr;
+    for (var y = 0; y < rows; y++) rowPY[y] = Math.round((y * ch + ch * 0.5) * dpr - tileOY) / dpr;
+  }
+
+  /* ---------- centre falloff ---------- */
+  function applyFade(w, h) {
+    var f = o.fade;
+    if (!f) return;
+    var fx = (f.cx == null ? 0.5 : f.cx) * w, fy = (f.cy == null ? 0.5 : f.cy) * h;
+    var rx = (f.rx == null ? 0.5 : f.rx) * w, ry = (f.ry == null ? 0.5 : f.ry) * h;
+    if (!(rx > 0) || !(ry > 0)) return;
+    var stops = f.stops || [[0, 0], [1, 1]];
+    var key = stops.join(";");
+    if (!fadeGrad || key !== fadeGradKey) {
+      fadeGradKey = key;
+      // Built on the unit circle and stretched into the design's ellipse by
+      // the transform below. A gradient is resolution-independent and the
+      // transform applies when it is painted, so this is built once.
+      fadeGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      for (var i = 0; i < stops.length; i++) {
+        fadeGrad.addColorStop(stops[i][0], "rgba(0,0,0," + stops[i][1] + ")");
+      }
+    }
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.scale(rx, ry);
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.fillStyle = fadeGrad;
+    ctx.fillRect(-fx / rx, -fy / ry, w / rx, h / ry);
+    ctx.restore();
+  }
 
   /* ---------- layout ---------- */
   function resolveFont() {
@@ -138,6 +329,10 @@ function createAsciiField(canvas, options) {
       heat = new Float32Array(cols * rows);
       glitch = new Float32Array(cols * rows);
     }
+    buildLut();
+    buildAtlas();
+    buildCellPositions();   // cols/cw/ch move without the atlas having to
+    buildNoiseTables();
   }
 
   /* ---------- hover writers ---------- */
@@ -239,6 +434,7 @@ function createAsciiField(canvas, options) {
       if (glitch[i] > 0.0015) glitch[i] *= gDecay; else glitch[i] = 0;
     }
 
+    resolvePointer();
     if (pointer.inside) {
       pointer.cx = pointer.x / cw;
       pointer.cy = pointer.y / ch;
@@ -263,11 +459,16 @@ function createAsciiField(canvas, options) {
     }
 
     buildLut();
+    buildAtlas();
+    buildNoiseTables();
+    advanceNoiseZ();
+
+    var vw = canvas.width / dpr, vh = canvas.height / dpr;
     if (o.background) {
       ctx.fillStyle = o.background;
-      ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      ctx.fillRect(0, 0, vw, vh);
     } else {
-      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      ctx.clearRect(0, 0, vw, vh);
     }
 
     var chars = o.ramp, L = chars.length;
@@ -277,14 +478,14 @@ function createAsciiField(canvas, options) {
     var repel = mode === "repel" && pointer.inside;
     var rx = pointer.cx, ry = pointer.cy, rr = o.radius * 1.5, rr2 = rr * rr;
     var gSeed = Math.floor(t * 900) + Math.floor(now / 70);
-    var b;
-    for (b = 0; b < N_BUCKETS; b++) bN[b] = 0;
+    var tw = tileW / dpr, th = tileH / dpr;
 
     for (var y = 0; y < rows; y++) {
-      var py = y * ch + ch * 0.5;
+      var py = rowPY[y], rowBase = y * cols;
       for (var x = 0; x < cols; x++) {
-        var sx = x, sy = y, rim = 0, hollow = 1;
+        var rim = 0, hollow = 1, v;
         if (repel) {
+          var sx = x, sy = y;
           var ddx = x - rx, ddy = (y - ry) * aspect;
           var d2 = ddx * ddx + ddy * ddy;
           if (d2 < rr2) {
@@ -296,13 +497,14 @@ function createAsciiField(canvas, options) {
             hollow = fall * fall;
             rim = Math.max(0, 1 - Math.abs(fall - 0.78) / 0.22) * 0.85;
           }
+          v = fbm(sx * cw * freq, sy * ch * freq, t);
+        } else {
+          v = fbmGrid(x, y);
         }
-
-        var v = fbm(sx * cw * freq, sy * ch * freq, t);
         v = ((v - 0.5) * 1.85 + 0.5 - floorT) * span;
         if (hollow < 1) v *= hollow;
 
-        var idx = y * cols + x;
+        var idx = rowBase + x;
         var h = heat[idx] + rim;
         var total = v + h * 1.05;
         var g = glitch[idx];
@@ -312,26 +514,17 @@ function createAsciiField(canvas, options) {
         var ci = Math.floor(total * L);
         if (ci < 0) ci = 0; else if (ci > L - 1) ci = L - 1;
         if (g > 0.06) ci = Math.floor(hash3(x, y, gSeed) * L);
-        var glyph = chars.charAt(ci);
-        if (glyph === " ") continue;
+        if (chars.charCodeAt(ci) === 32) continue;
 
         var sLvl = Math.min(BASE_LEVELS - 1, Math.max(0, Math.floor(Math.max(0, v) * BASE_LEVELS)));
         var hLvl = Math.min(HEAT_LEVELS - 1, Math.max(0, Math.floor(Math.max(h, g) * (HEAT_LEVELS - 1))));
         var bi = sLvl * HEAT_LEVELS + hLvl;
-        var bk = bN[bi]++;
-        bChar[bi][bk] = glyph;
-        bX[bi][bk] = x * cw;
-        bY[bi][bk] = py;
+
+        ctx.drawImage(atlas, ci * tileW, bi * tileH, tileW, tileH, colPX[x], py, tw, th);
       }
     }
 
-    for (b = 0; b < N_BUCKETS; b++) {
-      var count = bN[b];
-      if (!count) continue;
-      ctx.fillStyle = lut[b];
-      var cs = bChar[b], xs = bX[b], ys = bY[b];
-      for (var j = 0; j < count; j++) ctx.fillText(cs[j], xs[j], ys[j]);
-    }
+    applyFade(vw, vh);
   }
 
   /* ---------- pointer: listened on window so content on top doesn't block it ---------- */
@@ -341,13 +534,31 @@ function createAsciiField(canvas, options) {
     if (nx < 0 || ny < 0 || nx > rect.width || ny > rect.height) return null;
     return { x: nx, y: ny };
   }
+  // A move only records where the pointer is on the page; turning that into a
+  // position on the canvas needs the canvas's box, and asking for the box is
+  // what makes the browser stop and settle the layout first. Doing it per
+  // event means doing it dozens of times a frame, and while a smooth-scroll
+  // library is moving the page every one of those is a fresh layout. The frame
+  // resolves it once instead — which is all it can use anyway, since it only
+  // ever reads the latest position.
   function onMove(e) {
-    var p = hit(e);
-    if (!p) { pointer.inside = false; return; }
-    if (!pointer.inside) { pointer.px = p.x; pointer.py = p.y; }
-    pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
+    pointer.clientX = e.clientX;
+    pointer.clientY = e.clientY;
+    pointer.pending = true;
   }
-  function onLeave() { pointer.inside = false; }
+  function resolvePointer() {
+    if (!pointer.pending) return;
+    pointer.pending = false;
+    var rect = canvas.getBoundingClientRect();
+    var nx = pointer.clientX - rect.left, ny = pointer.clientY - rect.top;
+    if (nx < 0 || ny < 0 || nx > rect.width || ny > rect.height) {
+      pointer.inside = false;
+      return;
+    }
+    if (!pointer.inside) { pointer.px = nx; pointer.py = ny; }
+    pointer.x = nx; pointer.y = ny; pointer.inside = true;
+  }
+  function onLeave() { pointer.inside = false; pointer.pending = false; }
   function onDown(e) {
     if (!o.clickRipples) return;
     var p = hit(e);

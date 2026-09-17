@@ -187,28 +187,38 @@ body {
 /* MarketsTogether card texture (Figma 258:10913). The design draws 2,679
  * isometric chevrons over the green gradient, and every one of them is pure
  * black — the group carries no colour at all, only alpha, topping out at
- * 36/255. So it ships as a shape: the export's alpha stretched to the full
- * 0-255 range, masking a flat black layer that CSS takes back down to
- * 36/255 = 14.1%. Same pixels as a flattened picture of the design, but the
- * strength stays a number someone can retune, and it does not have to be
- * re-exported if the gradient under it changes.
+ * 36/255 = 14.1%.
  *
- * The mask must carry that shape in its *alpha* channel, not as grey levels:
- * `mask-mode` defaults to the source's alpha, so a greyscale file (which has no
- * alpha) masks nothing and the black layer washes the whole card evenly. That
- * costs ~30KB over a greyscale file, and buys not depending on `mask-mode`.
+ * This used to ship as the shape alone: `pattern-mask.webp`, the export's alpha
+ * stretched to the full 0-255 range, masking a flat black layer that CSS took
+ * back down to 14.1%. That kept the strength as a number someone could retune,
+ * and it is the version to go back to if this ever needs to be re-tuned live —
+ * but it cost Firefox the section. A `mask-image` over a layer this size, inside
+ * a sticky container, is re-run as a masking pass every time the layer moves:
+ * scrolling this section measured 30fps in Firefox, and 63fps with nothing
+ * changed but this rule taken off (2026-09-18). Safari and Chrome were
+ * indifferent, so this is Firefox's own cost.
+ *
+ * So the two layers are pre-multiplied into one flat picture instead. The
+ * chevrons are black at their final alpha, and the element just paints it —
+ * nothing to mask, nothing to composite through an `opacity`. Same pixels: the
+ * baked alpha matches `mask-alpha x 0.141` to within 0.17/255 (mean 0.03), and
+ * every visible pixel is pure black. Regenerate it from the mask export with
+ *
+ *   ffmpeg -i pattern-mask.webp -vf "format=rgba,colorchannelmixer=\
+ *     rr=0:rg=0:rb=0:gr=0:gg=0:gb=0:br=0:bg=0:bb=0:aa=0.141" tex.png
+ *   cwebp -q 90 -alpha_q 100 -exact tex.png -o pattern.webp
+ *
+ * where `aa` is that 14.1%. `pattern-mask.webp` stays in the repo as the source
+ * this is derived from.
  *
  * `cover` rather than the design's fixed size: there is no mobile frame for
  * this section, and a texture is the one thing that can be cropped freely. */
 .mt-texture {
-  -webkit-mask-image: url("/images/markets-together/pattern-mask.webp");
-  mask-image: url("/images/markets-together/pattern-mask.webp");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: cover;
-  mask-size: cover;
+  background-image: url("/images/markets-together/pattern.webp");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 /* HowItWorks card (Figma 258:13608). The section sits on one rounded card
