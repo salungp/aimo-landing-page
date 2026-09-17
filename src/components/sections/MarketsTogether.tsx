@@ -1,6 +1,7 @@
 "use client";
 
 import Container from "../Container";
+import InViewLoopVideo from "../InViewLoopVideo";
 import InViewLottie from "../InViewLottie";
 import Reveal from "../Reveal";
 import TitleReveal from "../TitleReveal";
@@ -98,24 +99,48 @@ export default function MarketsTogether() {
                    * — the design's own margin. The cap only bites under ~820px of
                    * viewport; at the design's 900 it stays 490. */}
                   <div className="mx-auto w-full max-w-[490px] overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#2C3D13_0%,#4F7C0E_100%)] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)] desktop:max-w-[min(490px,calc(100svh-330px))]">
-                    {/* The scene itself, played straight from the source Lottie —
-                     * no video conversion. Same file the OneBalance-era Lotties
-                     * were (6MB, ~300 embedded images), so it costs what those
-                     * cost: see InViewLottie for the SVG-renderer and
-                     * only-load-when-near tradeoffs that make that affordable. */}
-                    <InViewLottie
-                      src="/lottie/markets-together.json"
-                      width={1130}
-                      height={1129}
-                      fill
-                      // The scene fades up from an empty frame, so the component's
-                      // own default still (an early, arbitrary frame) would leave
-                      // a reduced-motion visitor looking at nothing. Frame 522 is
-                      // the insight itself: what changed, why it matters, and the
-                      // suggestion, all on screen at once — the same moment the
-                      // video version parked on.
-                      stillFrame={522}
-                    />
+                    {/* Below `tablet`: a pre-rendered video, not the live Lottie.
+                     * The scene is 6MB of JSON and ~300 embedded images; the SVG
+                     * renderer re-rasterises every layer — several behind blur
+                     * filters — on every frame, which desktop/tablet hardware
+                     * shrugs off but a phone visibly can't (reported laggy on
+                     * request 2026-09-17). Rendered at 660px, 2x the plate's own
+                     * ~329px mobile width, so nothing here outruns a phone screen's
+                     * own resolution; see scripts/render-lottie.mjs's `outW`. */}
+                    <div className="tablet:hidden">
+                      <InViewLoopVideo
+                        mp4="/video/markets-together-mobile.mp4"
+                        poster="/video/markets-together-mobile-poster.webp"
+                        width={660}
+                        height={660}
+                        // Same reasoning as the Lottie's stillFrame below — the
+                        // scene fades up from an empty frame, so a reduced-motion
+                        // visitor needs a real moment, not the first one.
+                        stillTime={8.7}
+                        className="block h-auto w-full"
+                      />
+                    </div>
+
+                    {/* `tablet` and up: the scene itself, played straight from the
+                     * source Lottie — no video conversion. Desktop/tablet hardware
+                     * has no trouble with the same file's cost: see InViewLottie
+                     * for the SVG-renderer and only-load-when-near tradeoffs that
+                     * make that affordable there. */}
+                    <div className="hidden tablet:block">
+                      <InViewLottie
+                        src="/lottie/markets-together.json"
+                        width={1130}
+                        height={1129}
+                        fill
+                        // The scene fades up from an empty frame, so the component's
+                        // own default still (an early, arbitrary frame) would leave
+                        // a reduced-motion visitor looking at nothing. Frame 522 is
+                        // the insight itself: what changed, why it matters, and the
+                        // suggestion, all on screen at once — the same moment the
+                        // video version parked on.
+                        stillFrame={522}
+                      />
+                    </div>
                   </div>
                 </Reveal>
               </div>
