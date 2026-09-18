@@ -4,13 +4,13 @@ import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } fr
 import {
   motion,
   useMotionValueEvent,
-  useReducedMotion,
   useScroll,
   type Transition,
 } from "framer-motion";
 import clsx from "clsx";
 import Container from "../Container";
 import Reveal from "../Reveal";
+import useReducedMotionAfterMount from "../useReducedMotionAfterMount";
 import TitleReveal from "../TitleReveal";
 import WordReveal from "../WordReveal";
 
@@ -254,7 +254,11 @@ function cardTransition(phase: Phase, i: number): Transition {
 }
 
 export default function WalletCards() {
-  const reduceMotion = useReducedMotion();
+  // Not Framer Motion's `useReducedMotion`: this component returns two
+  // different trees — a plain grid below, the pinned deck otherwise — and
+  // choosing between them on a value the server cannot know made every
+  // reduced-motion visit hydrate against the wrong one. See the hook.
+  const reduceMotion = useReducedMotionAfterMount();
 
   const header = (
     <div className="mx-auto flex max-w-[640px] flex-col items-center gap-3 text-center">

@@ -428,3 +428,37 @@ html.lenis body {
     );
   }
 }
+
+/* Word-by-word title reveal (`WordReveal.tsx`), for readers who asked for less
+ * motion.
+ *
+ * The component renders one set of starting styles for everyone — a blurred,
+ * slightly transparent word sitting half a line low — because branching that
+ * on `prefers-reduced-motion` is branching on something the server cannot
+ * know, which is what used to make every page with a heading log a React
+ * hydration mismatch. So the correction happens here instead, where the server
+ * is not involved.
+ *
+ * `!important` because it is overriding inline styles: Framer Motion writes
+ * the starting state onto the element itself, and a stylesheet cannot outrank
+ * that by weight alone. The reveal's own transition is separately collapsed to
+ * zero for these readers, and the settled words have their inline styles
+ * removed, so this rule only governs the window before that happens — which
+ * includes the whole time a heading is sitting below the fold waiting to be
+ * scrolled to, and the case where the JavaScript never arrives at all. */
+@media (prefers-reduced-motion: reduce) {
+  .wr-word {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  /* `TitleReveal`, for the same reason and by the same means: eyebrows and
+   * subtitles are rendered already faded out and 40px low, unconditionally,
+   * and this is what puts them back for a reader who asked for less motion —
+   * at first paint, below the fold, and with no JavaScript. */
+  .tr-rise {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -84,20 +84,33 @@ const OPACITY_FROM = 0.8;
  * gradient-clipped span for a highlighted word) rather than a monochrome
  * paragraph that needs to.
  */
+/**
+ * The two states are unconditional, and that is the point. This used to pick
+ * them from `useReducedMotion()` — a value the server cannot know, so it
+ * rendered one set of styles and the client hydrated with another, and every
+ * page carrying a heading logged a React hydration mismatch for anyone asking
+ * for less motion. The styles the server writes are now the same for everyone.
+ *
+ * Reduced motion is honoured in two places that markup does not reach: the
+ * transition below collapses to zero, so nothing animates, and `.wr-word` in
+ * globals.css pins the resting appearance from the first paint — before, and
+ * without, any JavaScript. Together those give a reader who asked for less
+ * motion settled text immediately, which is more than the old branch managed.
+ */
 const wordVariants = (reduceMotion: boolean | null): Variants => ({
-  hidden: reduceMotion ? {} : { opacity: OPACITY_FROM, filter: `blur(${BLUR_FROM})`, y: SLIDE_FROM },
-  visible: reduceMotion
-    ? {}
-    : {
-        opacity: 1,
-        filter: "blur(0px)",
-        y: 0,
-        transition: {
+  hidden: { opacity: OPACITY_FROM, filter: `blur(${BLUR_FROM})`, y: SLIDE_FROM },
+  visible: {
+    opacity: 1,
+    filter: "blur(0px)",
+    y: 0,
+    transition: reduceMotion
+      ? { duration: 0 }
+      : {
           opacity: { duration: WORD_DURATION, ease: EASE_OUT },
           filter: { duration: WORD_DURATION, ease: EASE_OUT },
           y: { duration: SLIDE_DURATION, ease: "linear" },
         },
-      },
+  },
 });
 
 /** True for a run of one-or-more whitespace characters — kept as plain text
@@ -150,7 +163,7 @@ function splitWords(
         <motion.span
           key={`${path}-${i}`}
           variants={wordVariants(reduceMotion)}
-          className={`inline-block ${inFlight ? "will-change-[filter,opacity,transform]" : ""} ${paint}`}
+          className={`wr-word inline-block ${inFlight ? "will-change-[filter,opacity,transform]" : ""} ${paint}`}
         >
           {part}
         </motion.span>
