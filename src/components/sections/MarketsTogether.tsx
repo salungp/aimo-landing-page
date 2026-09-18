@@ -19,11 +19,16 @@ import WordReveal from "../WordReveal";
  * and pins there for half a screen of extra scrolling before moving on.
  *
  * The card is a background layer rather than a wrapper around the content, so
- * the copy stays on `Container`'s grid and lines up with every other section.
- * Container's own padding — 220px at desktop, 460px at wide — is what lands
- * the design's illustration and text columns, independent of the card's own
- * inset: the same 490 / 50 / 460 split as OneBalance, off the same 1000px
- * column.
+ * the copy stays on `Container`'s grid, independent of the card's own inset:
+ * the same 490 / 50 / 460 split as OneBalance, off the same 1000px column.
+ * Container's padding — 220px at desktop, 460px at wide — lands that column
+ * exactly at the two design widths, but everywhere between them the padded
+ * column is wider than the pair's fixed 1000px, so the row centres what is
+ * left over instead of packing it against one edge. `row-reverse` packs
+ * towards the right, which piled every spare pixel on the left: at a 1600px
+ * window the scene sat 145px off-centre inside a full-bleed card, where it
+ * showed (reported 2026-09-18). OneBalance and FAQ centre for the same
+ * reason, packing left.
  *
  * There is no mobile or tablet frame for this design, and below `desktop` the
  * two halves stack: the copy alone is most of a phone screen, so a pinned
@@ -60,7 +65,7 @@ export default function MarketsTogether() {
               {/* Copy first in the DOM so the heading leads on a phone and for
                * anything reading the page in order; `row-reverse` puts the scene
                * back on the left once the two sit side by side. */}
-              <div className="flex flex-col items-start gap-12 px-3 tablet:px-0 desktop:flex-row-reverse desktop:items-center desktop:gap-[50px]">
+              <div className="flex flex-col items-start gap-12 px-3 tablet:px-0 desktop:flex-row-reverse desktop:items-center desktop:justify-center desktop:gap-[50px]">
                 <div className="flex flex-col gap-3 desktop:w-[460px] desktop:shrink-0">
                   <TitleReveal>
                     <p className="font-mono text-xs leading-[1.5] font-medium tracking-[0.04em] text-ink uppercase tablet:text-[13px] desktop:text-sm">

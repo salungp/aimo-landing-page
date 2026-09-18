@@ -10,7 +10,9 @@ import BalanceHub from "../one-balance/BalanceHub";
  * Figma 244:1198 — copy on the left, the connected-wallets hub on the right.
  *
  * The desktop frame is 1440x900 with a 1000px column split 460 / 50 / 490, and
- * that is what runs from `desktop` up. There is no mobile or tablet frame, so
+ * that is what runs from `desktop` up — centred in Container's padded column,
+ * which is wider than 1000px at every width between the 1440 and 1920 frames
+ * (see MarketsTogether, where the same leftover showed as an off-centre card). There is no mobile or tablet frame, so
  * below that the two halves stack and the illustration keeps its square,
  * scaling to the column; the type steps down on the same scale the rest of the
  * site uses.
@@ -34,7 +36,7 @@ export default function OneBalance() {
       />
 
       <Container>
-        <div className="flex flex-col items-start gap-12 desktop:flex-row desktop:items-center desktop:gap-[50px]">
+        <div className="flex flex-col items-start gap-12 desktop:flex-row desktop:items-center desktop:justify-center desktop:gap-[50px]">
           <div className="flex flex-col gap-3 desktop:w-[460px] desktop:shrink-0">
             <TitleReveal>
               <p className="bg-gradient-to-b from-primary to-primary-dark bg-clip-text font-mono text-xs leading-[1.5] font-medium tracking-[0.04em] text-transparent uppercase tablet:text-[13px] desktop:text-sm">

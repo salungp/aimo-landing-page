@@ -11,6 +11,8 @@ const brands: { name: string; src: string; w: number; h: number; opacity?: numbe
   { name: "BNB Chain", src: "/images/hero/bnb-chain.svg", w: 148, h: 26 },
   { name: "Robinhood", src: "/images/hero/robinhood.svg", w: 136, h: 26 },
   { name: "Privy", src: "/images/hero/privy.png", w: 115, h: 26, opacity: 0.4 },
+  { name: "Base", src: "/images/hero/base.svg", w: 115, h: 26 },
+  { name: "Solana", src: "/images/hero/solana.svg", w: 100, h: 24 },
 ];
 
 /** Both ends of the strip fade into the background (257px of Figma's 1000px row). */

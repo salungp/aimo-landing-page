@@ -33,9 +33,9 @@ type BubbleIcon = {
 const bubbles: BubbleIcon[] = [
   { id: "sol-1", left: 31.6, top: 42.67, w: 6.67, h: 12.8, iconScale: 0.479, src: "/images/orbit/token-sol.svg", blur: 5, depth: 0.8 },
   { id: "eth", left: 43.33, top: 66.53, w: 6.67, h: 12.8, iconScale: 0.326, src: "/images/orbit/token-eth.svg", blur: 5, depth: 0.8 },
-  { id: "hl-1", left: 59.03, top: 60.8, w: 4.58, h: 8.8, iconScale: 0.485, src: "/images/orbit/token-hl.svg", blur: 8.25, depth: 1.3 },
+  { id: "bnb", left: 59.03, top: 60.8, w: 4.58, h: 8.8, iconScale: 0.42, src: "/images/orbit/token-bnb.svg", blur: 8.25, depth: 1.3 },
   { id: "hl-2", left: 42.78, top: 11.6, w: 4.58, h: 8.8, iconScale: 0.485, src: "/images/orbit/token-hl.svg", blur: 8.25, depth: 1.3 },
-  { id: "sol-2", left: 62.57, top: 39.6, w: 6.67, h: 12.8, iconScale: 0.479, src: "/images/orbit/token-sol.svg", blur: 5, depth: 0.8 },
+  { id: "robinhood", left: 62.57, top: 39.6, w: 6.67, h: 12.8, iconScale: 0.335, src: "/images/orbit/token-robinhood.svg", blur: 5, depth: 0.8 },
   { id: "polymarket", left: 57.36, top: 14.93, w: 6.67, h: 12.8, iconScale: 0.335, src: "/images/orbit/token-polymarket.svg", blur: 5, depth: 0.8 },
   { id: "bitcoin", left: 28.06, top: 22.8, w: 6.67, h: 12.8, iconScale: 0.324, src: "/images/orbit/token-bitcoin.svg", blur: 5, depth: 0.8 },
 ];
@@ -49,10 +49,10 @@ const mobileBubbles: BubbleIcon[] = [
   { id: "hl-top", left: 36.9, top: 9.55, w: 12.21, h: 10.91, iconScale: 0.485, src: "/images/orbit/token-hl.svg", blur: 6, depth: 0 },
   { id: "polymarket", left: 65.39, top: 12.27, w: 18.32, h: 16.36, iconScale: 0.335, src: "/images/orbit/token-polymarket.svg", blur: 3.75, depth: 0 },
   { id: "bitcoin", left: 7.38, top: 20.45, w: 18.46, h: 16.49, iconScale: 0.324, src: "/images/orbit/token-bitcoin.svg", blur: 3.75, depth: 0 },
-  { id: "sol-right", left: 76.59, top: 46.36, w: 18.32, h: 16.36, iconScale: 0.479, src: "/images/orbit/token-sol.svg", blur: 3.75, depth: 0 },
+  { id: "robinhood", left: 76.59, top: 46.36, w: 18.32, h: 16.36, iconScale: 0.335, src: "/images/orbit/token-robinhood.svg", blur: 3.75, depth: 0 },
   { id: "sol-left", left: 7.63, top: 62.73, w: 18.32, h: 16.36, iconScale: 0.479, src: "/images/orbit/token-sol.svg", blur: 3.75, depth: 0 },
   { id: "eth", left: 39.44, top: 79.09, w: 18.32, h: 16.36, iconScale: 0.326, src: "/images/orbit/token-eth.svg", blur: 3.75, depth: 0 },
-  { id: "hl-bottom", left: 71.5, top: 73.64, w: 12.21, h: 10.91, iconScale: 0.485, src: "/images/orbit/token-hl.svg", blur: 6, depth: 0 },
+  { id: "bnb", left: 71.5, top: 73.64, w: 12.21, h: 10.91, iconScale: 0.42, src: "/images/orbit/token-bnb.svg", blur: 6, depth: 0 },
 ];
 
 export default function SeamlessExperience() {

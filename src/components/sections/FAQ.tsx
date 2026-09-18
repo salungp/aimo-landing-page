@@ -62,7 +62,10 @@ export default function FAQ() {
   return (
     <section id="faq" className="py-20 tablet:py-28 desktop:py-20">
       <Container>
-        <div className="flex flex-col items-start gap-10 tablet:gap-12 desktop:flex-row desktop:gap-0">
+        {/* 436 + 564 off the design's 1000px column, centred in Container's
+         * padded column — which is wider than that between the 1440 and 1920
+         * frames (see MarketsTogether for what the leftover looked like). */}
+        <div className="flex flex-col items-start gap-10 tablet:gap-12 desktop:flex-row desktop:justify-center desktop:gap-0">
           <WordReveal className="desktop:w-[436px] desktop:shrink-0">
             <h2 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
               Questions?{" "}
