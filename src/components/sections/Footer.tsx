@@ -62,6 +62,8 @@ function CtaBanner() {
       <img
         src="/images/footer/cta-texture.webp"
         alt=""
+        loading="lazy"
+        decoding="async"
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-50 tablet:top-0 tablet:right-0 tablet:left-auto tablet:h-full tablet:w-[61%] tablet:opacity-100"
       />
 
@@ -83,6 +85,8 @@ function CtaBanner() {
         <img
           src="/images/footer/phone-mockup.webp"
           alt="The AIMO app open to a portfolio view, held in a hand"
+          loading="lazy"
+          decoding="async"
           className="size-full object-cover"
         />
       </Reveal>
@@ -101,6 +105,8 @@ function CtaBanner() {
           <img
             src="/images/footer/phone-mockup.webp"
             alt="The AIMO app open to a portfolio view, held in a hand"
+            loading="lazy"
+            decoding="async"
             className="size-full object-cover"
           />
         </Reveal>

@@ -9,6 +9,35 @@ const nextConfig: NextConfig = {
   // the page never hydrates (no autoplaying video, no scroll animations).
   // Update the IP if the Mac's local address changes. No effect in production.
   allowedDevOrigins: ["192.168.0.157"],
+
+  // Everything Next builds is content-hashed and already served immutable for a
+  // year. Everything in `public/` is not: the default for those is
+  // `max-age=0`, so a returning visitor re-validates every one of them — on
+  // this page that is ~40 conditional requests, for about 1.5MB of pictures and
+  // video that had not changed, before anything can paint.
+  //
+  // A day of freshness plus a week of stale-while-revalidate is the compromise
+  // these filenames allow. They are stable (`hero-bg-loop.mp4` keeps its name
+  // when the clip behind it is replaced), so `immutable` would leave visitors
+  // holding a replaced asset until their cache evicted it. As written, a
+  // replacement is picked up within a day, or on the next load after one
+  // visitor has been served the stale copy once.
+  //
+  // If these assets ever get content-hashed names, raise this to
+  // `max-age=31536000, immutable` and drop the revalidation entirely.
+  async headers() {
+    return [
+      {
+        source: "/:path*.(webp|png|jpg|jpeg|svg|avif|mp4|webm|json|woff2)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

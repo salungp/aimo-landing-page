@@ -210,7 +210,13 @@ export default function BalanceHub({ className }: { className?: string }) {
             style={{ left: badge.x - 24, top: badge.y - 24, zIndex: 3 }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/images/one-balance/${badge.icon}.svg`} alt="" className="size-[18px]" />
+            <img
+              src={`/images/one-balance/${badge.icon}.svg`}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="size-[18px]"
+            />
           </div>
         ))}
       </div>

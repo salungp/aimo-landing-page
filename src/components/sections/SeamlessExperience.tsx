@@ -72,19 +72,32 @@ export default function SeamlessExperience() {
     const strength = 14;
     let targetX = 0;
     let targetY = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+    let havePointer = false;
     let currentX = 0;
     let currentY = 0;
     let rafId: number;
 
+    // The handler only records where the cursor is. Resolving that against the
+    // stage's box is done once per frame below, because `getBoundingClientRect`
+    // forces a layout flush — and a pointermove handler runs many times per
+    // frame, on a page whose every scroll tick has already moved the box. The
+    // frame only ever uses the latest position anyway.
     function onPointerMove(e: PointerEvent) {
-      const rect = stage!.getBoundingClientRect();
-      const nx = (e.clientX - rect.left) / rect.width - 0.5;
-      const ny = (e.clientY - rect.top) / rect.height - 0.5;
-      targetX = -nx * strength;
-      targetY = -ny * strength;
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+      havePointer = true;
     }
 
     function tick() {
+      if (havePointer) {
+        const rect = stage!.getBoundingClientRect();
+        const nx = (pointerX - rect.left) / rect.width - 0.5;
+        const ny = (pointerY - rect.top) / rect.height - 0.5;
+        targetX = -nx * strength;
+        targetY = -ny * strength;
+      }
       currentX += (targetX - currentX) * 0.06;
       currentY += (targetY - currentY) * 0.06;
       stage!.style.setProperty("--mx", currentX.toFixed(2));
@@ -92,17 +105,38 @@ export default function SeamlessExperience() {
       rafId = requestAnimationFrame(tick);
     }
 
+    // Nothing runs while the section is away. The loop reads the stage's box
+    // every frame, and the page is scrolled by Lenis, so an ungated loop would
+    // be flushing layout sixty times a second through every other section on
+    // the page to ease a parallax nobody is looking at.
+    let looping = false;
+    function start() {
+      if (looping) return;
+      looping = true;
+      rafId = requestAnimationFrame(tick);
+    }
+    function stop() {
+      if (!looping) return;
+      looping = false;
+      cancelAnimationFrame(rafId);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => (entry.isIntersecting ? start() : stop()),
+      { rootMargin: "100px" },
+    );
+    observer.observe(stage);
     window.addEventListener("pointermove", onPointerMove, { passive: true });
-    rafId = requestAnimationFrame(tick);
 
     return () => {
+      observer.disconnect();
       window.removeEventListener("pointermove", onPointerMove);
-      cancelAnimationFrame(rafId);
+      stop();
     };
   }, []);
 
   return (
-    <section className="relative overflow-hidden py-20 tablet:py-28 desktop:py-32">
+    <section className="seamless-fit relative overflow-hidden py-20 tablet:py-12">
       {/* Mobile: tighter cluster (a distinct layout, not a scaled-down desktop one) */}
       <div className="relative aspect-[393/440] w-full tablet:hidden">
         <OrbGlow style={{ left: "-26.3%", top: "-18.7%", width: "152.5%", height: "136.3%" }} />
@@ -112,7 +146,11 @@ export default function SeamlessExperience() {
       </div>
 
       {/* Tablet/desktop: original wide layout */}
-      <div ref={stageRef} className="relative hidden aspect-[1440/750] w-full tablet:block">
+      <div
+        ref={stageRef}
+        className="relative mx-auto hidden aspect-[1440/750] tablet:block"
+        style={{ width: "var(--seamless-stage-w)" }}
+      >
         <OrbGlow style={{ left: "12.1%", top: "3%", width: "75.8%", height: "81.8%" }} />
         {bubbles.map((b, i) => (
           <OrbitBubble key={b.id} b={b} delay={i * 0.08} />
@@ -120,7 +158,10 @@ export default function SeamlessExperience() {
       </div>
 
       <Container>
-        <div className="mx-auto mt-10 flex max-w-[720px] flex-col items-center gap-3 text-center tablet:-mt-[6vw]">
+        <div
+          className="mx-auto flex max-w-[720px] flex-col items-center gap-3 text-center"
+          style={{ marginTop: "var(--seamless-copy-mt)" }}
+        >
           <WordReveal>
             <h2 className="text-[36px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
               One <span className="text-primary">seamless</span> experience.
@@ -154,7 +195,13 @@ function OrbGlow({ style }: { style: CSSProperties }) {
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/orbit/orb-glow.webp" alt="" className="size-full object-contain" />
+        <img
+          src="/images/orbit/orb-glow.webp"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="size-full object-contain"
+        />
       </div>
     </Reveal>
   );
@@ -180,6 +227,8 @@ function OrbitBubble({ b, delay }: { b: BubbleIcon; delay: number }) {
         <img
           src={b.src}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{ width: `${b.iconScale * 100}%` }}
         />

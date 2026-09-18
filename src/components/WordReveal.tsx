@@ -1,6 +1,15 @@
 "use client";
 
-import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 
 type WordRevealProps = {
@@ -124,7 +133,13 @@ const isPaintClass = (c: string) => /^(bg-|from-|to-|via-)/.test(c) || c === "te
  * down to the actual word spans (see `isPaintClass`) — without it a
  * gradient-clipped word disappears rather than turning color.
  */
-function splitWords(node: ReactNode, path: string, reduceMotion: boolean | null, paint = ""): ReactNode {
+function splitWords(
+  node: ReactNode,
+  path: string,
+  reduceMotion: boolean | null,
+  inFlight: boolean,
+  paint = "",
+): ReactNode {
   if (node == null || typeof node === "boolean") return node;
 
   if (typeof node === "string") {
@@ -135,7 +150,7 @@ function splitWords(node: ReactNode, path: string, reduceMotion: boolean | null,
         <motion.span
           key={`${path}-${i}`}
           variants={wordVariants(reduceMotion)}
-          className={`inline-block will-change-[filter,opacity,transform] ${paint}`}
+          className={`inline-block ${inFlight ? "will-change-[filter,opacity,transform]" : ""} ${paint}`}
         >
           {part}
         </motion.span>
@@ -144,7 +159,7 @@ function splitWords(node: ReactNode, path: string, reduceMotion: boolean | null,
   }
 
   if (Array.isArray(node)) {
-    return Children.map(node, (child, i) => splitWords(child, `${path}-${i}`, reduceMotion, paint));
+    return Children.map(node, (child, i) => splitWords(child, `${path}-${i}`, reduceMotion, inFlight, paint));
   }
 
   if (isValidElement(node)) {
@@ -152,7 +167,7 @@ function splitWords(node: ReactNode, path: string, reduceMotion: boolean | null,
     if (el.props.children === undefined) return el;
     const ownPaint = (el.props.className ?? "").split(/\s+/).filter(isPaintClass).join(" ");
     const nextPaint = ownPaint ? `${paint} ${ownPaint}`.trim() : paint;
-    return cloneElement(el, undefined, splitWords(el.props.children, path, reduceMotion, nextPaint));
+    return cloneElement(el, undefined, splitWords(el.props.children, path, reduceMotion, inFlight, nextPaint));
   }
 
   return node;
@@ -185,27 +200,59 @@ function splitWords(node: ReactNode, path: string, reduceMotion: boolean | null,
  * tick across ~50 words — worth avoiding there, irrelevant here: a title is
  * a handful of words animating once, not continuously.
  *
- * One thing that version was careful about and this one isn't: fully
- * removing a settled word's inline styles rather than leaving `blur(0px)`
- * (and the `will-change` promoting a layer for it) sitting there forever.
- * That mattered when it was 50 words repainting every frame; for a handful
- * of words animating once on page load, the leftover composited layers are
- * negligible, so this skips the cleanup for the simpler declarative variants
- * API.
+ * `will-change` is held only while a heading is actually revealing. It used
+ * to be a constant on every word span, on the reasoning that a handful of
+ * words animating once leaves a negligible number of composited layers — but
+ * this is on every heading on the site, and counted on the real page that was
+ * 53 spans, each asking the compositor for its own layer *and* its own filter
+ * rasterisation target, from first paint until the tab closed. They are all
+ * promoted before a single one of them has animated, and they stay promoted
+ * long after the last one has settled. So the parent flips the hint on when
+ * its stagger starts and off when the last word lands: the animation is
+ * identical, and at rest the page holds none of those layers.
  */
 export default function WordReveal({ children, className, delay = 0, as = "div" }: WordRevealProps) {
   const reduceMotion = useReducedMotion();
   const MotionTag = as === "span" ? motion.span : motion.div;
+  // "idle" until this heading scrolls in, "done" once every word has settled;
+  // only in between do the words ask for a layer. See the note above.
+  const [inFlight, setInFlight] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const root = useRef<HTMLElement>(null);
+
+  // Framer Motion leaves a settled word holding the end of its own animation:
+  // `filter: blur(0px)`, a zero transform, `opacity: 1`. None of those change
+  // what is drawn, but a filter — even a no-op one — gives the element its own
+  // stacking context and effect node for the rest of the session. The reveal
+  // runs once (`viewport.once`), so once it is over the inline styles have
+  // nothing left to say and are cleared. This runs after React has committed
+  // the re-render that drops `will-change`, so it is the last word on the
+  // element's style.
+  useEffect(() => {
+    if (!settled || !root.current) return;
+    for (const word of root.current.querySelectorAll<HTMLElement>("span.inline-block")) {
+      word.style.removeProperty("filter");
+      word.style.removeProperty("transform");
+      word.style.removeProperty("opacity");
+      word.style.removeProperty("will-change");
+    }
+  }, [settled]);
 
   return (
     <MotionTag
+      ref={root as never}
       className={className}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.4, margin: "0px 0px -10% 0px" }}
       transition={{ staggerChildren: STAGGER, delayChildren: delay }}
+      onAnimationStart={() => setInFlight(true)}
+      onAnimationComplete={() => {
+        setInFlight(false);
+        setSettled(true);
+      }}
     >
-      {splitWords(children, "w", reduceMotion)}
+      {splitWords(children, "w", reduceMotion, inFlight)}
     </MotionTag>
   );
 }

@@ -379,3 +379,52 @@ html.lenis body {
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
+
+/* Seamless/orbit section, fitted to the viewport. The section sits between two
+ * full-height sections (the hero and the wallet deck), and Figma draws it as
+ * one 1440x900 frame (277:23968) holding the whole composition: the 1440x750
+ * orbit stage, the heading pulled up into the empty bottom of that stage, the
+ * paragraph under it, and room left over.
+ *
+ * Sizing the stage off the viewport WIDTH alone breaks that — at 1920 wide the
+ * stage on its own is 1000px tall, so the copy is pushed past the bottom of the
+ * screen and the section reads as two separate screens. So the stage takes the
+ * smaller of its two constraints: the width it is given, or the width that
+ * still leaves room for everything underneath it.
+ *
+ *   stage height   = W / 1.92        (the 1440x750 frame)
+ *   copy overlap   = 6% of W         (the heading's negative margin)
+ *   reserve        = the copy block + the section's own padding
+ *
+ *   W * (1/1.92 - 0.06) + reserve <= 100svh  ->  W <= (100svh - reserve) * 2.17
+ *
+ * 2.17 is 1 / (1/1.92 - 0.06); 0.1302 is 6% of that, so the overlap is written
+ * against the same budget and stays 6% of the stage once it is the stage being
+ * capped rather than the viewport.
+ *
+ * The reserve is the 96px of section padding (py-12, top and bottom) plus the
+ * 127px the copy occupies at desktop sizes (48px heading + 12px gap + two 30px
+ * lines), and three more so subpixel rounding can't tip it over. At 1440x900
+ * that still leaves the stage full-bleed, exactly as the frame draws it; past
+ * that width the stage simply stops growing once the copy would no longer fit.
+ * The 640px floor keeps a very short window from shrinking the illustration to
+ * nothing — below that the section is allowed to run past the viewport.
+ *
+ * Mobile is untouched: its own cluster layout stacks above the copy. */
+.seamless-fit {
+  --seamless-stage-w: 100%;
+  --seamless-copy-mt: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .seamless-fit {
+    --seamless-reserve: 226px;
+    --seamless-stage-w: min(
+      100%,
+      max(640px, (100svh - var(--seamless-reserve)) * 2.17)
+    );
+    --seamless-copy-mt: calc(
+      min(6vw, (100svh - var(--seamless-reserve)) * 0.1302) * -1
+    );
+  }
+}

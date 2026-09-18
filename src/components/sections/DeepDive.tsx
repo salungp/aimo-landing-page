@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Container from "../Container";
 import DeepDiveField from "../DeepDiveField";
-import LoopVideo from "../LoopVideo";
+import InViewLoopVideo from "../InViewLoopVideo";
 import Reveal from "../Reveal";
 import WaveLines from "../WaveLines";
 
@@ -159,6 +159,8 @@ function PerformanceIllustration() {
       <img
         src="/images/deepdive-performance.webp"
         alt=""
+        loading="lazy"
+        decoding="async"
         className="size-full object-cover object-top"
       />
     </div>
@@ -167,13 +169,21 @@ function PerformanceIllustration() {
 
 function IntelligenceIllustration() {
   // object-contain keeps the framing the Lottie it replaced had (SVG's default
-  // "meet"), so the phone sits exactly where it did. Reduced-motion and
-  // hidden-tab pausing come from LoopVideo.
+  // "meet"), so the phone sits exactly where it did.
+  //
+  // `InViewLoopVideo` rather than the plain `LoopVideo` the hero uses, because
+  // this card is three sections down: an autoplaying element fetches and plays
+  // the moment the page loads, which meant every visit spent a third-party DNS
+  // + TLS handshake and 68KB on this clip while the hero was still painting,
+  // then decoded a few hundred frames of it that nobody was in a position to
+  // see. Gated, none of that happens until the section is within a screen.
   return (
     <div className="relative mt-auto h-[180px] overflow-hidden tablet:h-[228px]">
-      <LoopVideo
+      <InViewLoopVideo
         mp4="https://ik.imagekit.io/pras09jeor/Scene-1%20(17).mp4"
         poster="https://ik.imagekit.io/pras09jeor/Scene-1%20(17).mp4/ik-thumbnail.jpg"
+        width={988}
+        height={456}
         className="size-full object-contain"
       />
     </div>

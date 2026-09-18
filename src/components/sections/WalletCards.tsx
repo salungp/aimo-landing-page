@@ -277,7 +277,8 @@ export default function WalletCards() {
 
   if (reduceMotion) {
     return (
-      <section id="features" className="py-20 tablet:py-28 desktop:py-32">
+      <section id="features" className="relative isolate overflow-hidden py-20 tablet:py-28 desktop:py-32">
+        <Backdrop />
         <Container>
           {header}
           <div className="mt-10 grid grid-cols-1 gap-3 tablet:mt-14 tablet:grid-cols-2 desktop:grid-cols-3">
@@ -353,6 +354,7 @@ function WalletStage({ header }: { header: React.ReactNode }) {
       {/* Short track: enough pin to watch the deck open, not enough to scrub it. */}
       <div ref={trackRef} className="relative h-[185vh]">
         <div className="sticky top-0 flex h-svh flex-col overflow-hidden pt-[96px] tablet:pt-[112px]">
+          <Backdrop />
           <Container>{header}</Container>
           <div ref={stageRef} className="relative mt-6 min-h-0 flex-1 tablet:mt-8">
             {size.w > 0 && (
@@ -493,6 +495,36 @@ function CardFace({ card, width }: { card: Card; width: number | null }) {
         className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_2px_1px_rgba(255,255,255,0.06)]"
       />
     </div>
+  );
+}
+
+/**
+ * Figma 274:23729 — the green streak picture behind the whole section, shaped
+ * by a blurred stadium mask so it reaches the head of the section and falls
+ * away to nothing at the corners.
+ *
+ * The mask and the 40% opacity are already in the file's alpha: this section
+ * pins, and a live `mask-image` over a layer this size inside a sticky
+ * container is a masking pass the browser redoes as that container moves.
+ * scripts/build-wallet-backdrop.mjs bakes it, from Figma's own mask export —
+ * point it at a new source image to replace this.
+ *
+ * The box is the mask's, at the fractions of Figma's 1440x900 frame it sits
+ * at. `fill` rather than `cover` because the feathered edge is in the pixels
+ * now: cropping it would cut a hard line where the fade should be, so the
+ * shape stretches with the viewport instead and the streaks stretch with it.
+ */
+function Backdrop() {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/images/wallet/backdrop.webp"
+      alt=""
+      aria-hidden
+      loading="lazy"
+      decoding="async"
+      className="pointer-events-none absolute top-[2.5%] left-[2.361%] -z-10 h-[95.222%] w-[95.278%] max-w-none object-fill"
+    />
   );
 }
 
