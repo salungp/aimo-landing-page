@@ -78,6 +78,7 @@ export default function SeamlessExperience() {
     let currentX = 0;
     let currentY = 0;
     let rafId: number;
+    let last = 0;
 
     // The handler only records where the cursor is. Resolving that against the
     // stage's box is done once per frame below, because `getBoundingClientRect`
@@ -90,7 +91,7 @@ export default function SeamlessExperience() {
       havePointer = true;
     }
 
-    function tick() {
+    function tick(now: number) {
       if (havePointer) {
         const rect = stage!.getBoundingClientRect();
         const nx = (pointerX - rect.left) / rect.width - 0.5;
@@ -98,8 +99,22 @@ export default function SeamlessExperience() {
         targetX = -nx * strength;
         targetY = -ny * strength;
       }
-      currentX += (targetX - currentX) * 0.06;
-      currentY += (targetY - currentY) * 0.06;
+
+      // Close the same fraction of the remaining distance per unit of *time*
+      // rather than per frame. Written as a flat `* 0.06` this drifted twice
+      // as fast on a 120Hz display as on a 60Hz one — the same gesture
+      // settling in half the wall-clock time, on nothing but the monitor. The
+      // exponent restates 0.06-per-60fps-frame over however many frames `dt`
+      // actually covers, so the 60Hz feel is preserved exactly (at dt = 1/60
+      // this is 0.06 again) and every other refresh rate now matches it. Same
+      // shape the ASCII field and the halftone field already use for their
+      // trail decay.
+      const dt = last ? Math.min((now - last) / 1000, 0.05) : 1 / 60;
+      last = now;
+      const k = 1 - Math.pow(1 - 0.06, dt * 60);
+
+      currentX += (targetX - currentX) * k;
+      currentY += (targetY - currentY) * k;
       stage!.style.setProperty("--mx", currentX.toFixed(2));
       stage!.style.setProperty("--my", currentY.toFixed(2));
       rafId = requestAnimationFrame(tick);
@@ -113,6 +128,7 @@ export default function SeamlessExperience() {
     function start() {
       if (looping) return;
       looping = true;
+      last = 0;
       rafId = requestAnimationFrame(tick);
     }
     function stop() {
