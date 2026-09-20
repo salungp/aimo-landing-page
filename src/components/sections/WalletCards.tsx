@@ -36,15 +36,15 @@ const cards: Card[] = [
     id: "spot",
     icon: "/images/wallets/spot-icon.svg",
     label: "Spot Wallet",
-    title: "For your everyday crypto.",
-    body: "Keep your spot assets organised and ready to trade.",
+    title: "For your everyday spot crypto trades.",
+    body: "Keep your spot assets organised and ready to trade without any technical hassle.",
   },
   {
     id: "perps",
     icon: "/images/wallets/perps-icon.svg",
     label: "Perps Wallet",
     title: "For leveraged positions.",
-    body: "Keep your perpetual trading funds separate from the rest of your portfolio.",
+    body: "Keep your perpetuals trading funds separate from the rest of your portfolio.",
   },
   {
     id: "prediction",
@@ -58,7 +58,7 @@ const cards: Card[] = [
     icon: "/images/wallets/outcome-icon.svg",
     label: "Outcome Wallet",
     title: "For event outcomes.",
-    body: "Back the results you believe in, with funds kept separate from the rest of your portfolio.",
+    body: "Back the results you believe in, with funds separated from the rest of your portfolio.",
   },
 ];
 
@@ -281,7 +281,7 @@ export default function WalletCards() {
 
   if (reduceMotion) {
     return (
-      <section id="features" className="relative isolate overflow-hidden py-20 tablet:py-28 desktop:py-32">
+      <section id="wallets" className="relative isolate overflow-hidden py-20 tablet:py-28 desktop:py-32">
         <Backdrop />
         <Container>
           {header}
@@ -354,7 +354,7 @@ function WalletStage({ header }: { header: React.ReactNode }) {
   const g = useMemo(() => computeGeometry(size.w, size.h), [size.w, size.h]);
 
   return (
-    <section id="features">
+    <section id="wallets">
       {/* Short track: enough pin to watch the deck open, not enough to scrub it. */}
       <div ref={trackRef} className="relative h-[185vh]">
         <div className="sticky top-0 flex h-svh flex-col overflow-hidden pt-[96px] tablet:pt-[112px]">

@@ -180,13 +180,12 @@ export default function SeamlessExperience() {
         >
           <WordReveal>
             <h2 className="text-[36px] font-semibold leading-[1.15] tracking-[-0.02em] text-white tablet:text-[40px] desktop:text-[48px]">
-              One <span className="text-primary">seamless</span> experience.
+              <span className="text-primary">Seamless</span> experience.
             </h2>
           </WordReveal>
           <TitleReveal delay={0.12}>
             <p className="text-base leading-[1.5] text-black-30 tablet:text-lg desktop:text-xl">
-              Keep your funds organised around how you trade. Move money
-              between wallets whenever you need it without leaving AIMO.
+              Keep your funds organised around how you trade. Move money between markets without leaving AIMO.
             </p>
           </TitleReveal>
         </div>

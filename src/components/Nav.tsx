@@ -8,8 +8,8 @@ import Container from "./Container";
 import logo from "../../public/images/shared/logo-primary.svg";
 
 const links = [
+  { label: "Wallets", hash: "#wallets" },
   { label: "Features", hash: "#features" },
-  { label: "How it works", hash: "#how-it-works" },
   { label: "FAQ", hash: "#faq" },
 ];
 

@@ -1,0 +1,57 @@
+AIMO LANDING PAGE — cara memasang
+=================================
+
+Isi: aimo-landing-page.zip (5.8 MB) — situs statis siap pakai.
+HTML, CSS, JS, gambar, video. Tidak perlu Node.js, database, atau
+proses build apa pun di server.
+
+
+CARA 1 — Netlify (paling cepat, ~30 detik)
+------------------------------------------
+1. Buka https://app.netlify.com/drop
+2. Seret file ZIP-nya ke halaman itu (tidak perlu di-extract).
+3. Selesai — situs langsung online dan dapat URL.
+
+Untuk memasang domain sendiri: Site configuration > Domain management.
+
+File _headers di dalam arsip otomatis terbaca Netlify. Isinya aturan
+cache untuk gambar dan video. Jangan dihapus.
+
+
+CARA 2 — hosting biasa (cPanel / FTP / shared hosting)
+------------------------------------------------------
+1. Extract ZIP-nya.
+2. Upload SELURUH ISINYA ke web root — biasanya folder public_html.
+
+   PENTING: yang diupload adalah ISI-nya, bukan foldernya.
+   Setelah selesai, di public_html harus langsung terlihat:
+
+       index.html
+       _next/
+       images/
+       video/
+       privacy-policy/
+       terms-of-service/
+
+   Kalau di public_html malah ada satu folder berisi semua itu,
+   situsnya tidak akan jalan. Naikkan isinya satu level.
+
+3. Buka domainnya. Selesai.
+
+Tips: kalau uploadnya lewat FTP, upload ZIP-nya dulu lalu extract di
+server (File Manager cPanel bisa). Jauh lebih cepat daripada
+mengupload 101 file satu per satu.
+
+
+CATATAN
+-------
+- Situs ini harus berada di web root (domain.com/), bukan di subfolder
+  (domain.com/landing/). Kalau perlu di subfolder, hubungi pembuatnya —
+  perlu di-build ulang.
+
+- Membuka index.html dengan klik dua kali dari komputer TIDAK akan
+  menampilkan halaman dengan benar. Itu normal. Situs ini harus
+  dilayani lewat web server.
+
+- File _headers hanya berlaku di Netlify. Di hosting lain file itu
+  diabaikan (tidak masalah, situs tetap jalan).

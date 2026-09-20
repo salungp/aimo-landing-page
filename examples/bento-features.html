@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AIMO — Bento feature ideation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   AIMO bento — content + UI illustration ideation
+   Standalone sandbox. Tokens mirror src/app/globals.css so
+   anything that survives review ports over unchanged.
+   Every illustration animates on transform/opacity only.
+   ============================================================ */
+
+:root{
+  --bg:#05130a;
+  --card:#0c1a0e;
+  --card-edge:rgba(255,255,255,.06);
+  --primary:#a7f932;
+  --primary-dim:rgba(167,249,50,.14);
+  --ink:#1a1a1a;
+  --w-100:#ffffff;
+  --w-60:rgba(255,255,255,.6);
+  --w-40:rgba(255,255,255,.4);
+  --w-20:rgba(255,255,255,.2);
+  --w-10:rgba(255,255,255,.1);
+  --w-06:rgba(255,255,255,.06);
+  --red:#ff6b57;
+  --radius:20px;
+  --gap:14px;
+}
+
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--w-100);
+  font-family:"Inter",system-ui,-apple-system,sans-serif;
+  letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,p,ul,ol{margin:0}
+ul{list-style:none;padding:0}
+
+.wrap{max-width:1240px;margin:0 auto;padding:72px 24px 96px}
+
+/* ---------- page header ---------- */
+.page-head{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between;margin-bottom:40px}
+.page-head h1{font-size:clamp(28px,4vw,44px);font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.page-head p{color:var(--w-60);font-size:15px;line-height:1.5;max-width:52ch;margin-top:12px}
+.kicker{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--primary);margin-bottom:14px}
+
+.toggle{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--w-60);background:var(--w-06);border:1px solid var(--w-10);
+  border-radius:999px;padding:10px 16px;transition:color .2s,border-color .2s;
+}
+.toggle:hover{color:var(--w-100);border-color:var(--w-20)}
+.toggle b{color:var(--primary);font-weight:500}
+
+/* ---------- bento grid ---------- */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--gap)}
+
+.card{
+  position:relative;overflow:hidden;
+  grid-column:span 6;
+  border:1px solid var(--card-edge);
+  border-radius:var(--radius);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(167,249,50,.05), transparent 60%),
+    var(--card);
+  padding:28px;
+  display:flex;flex-direction:column;gap:22px;
+}
+.card::after{
+  /* single hairline of light along the top edge — keeps cards from reading flat */
+  content:"";position:absolute;inset:0 0 auto;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(167,249,50,.25),transparent);
+  opacity:.5;pointer-events:none;
+}
+
+.eyebrow{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--primary);
+}
+.card h3{font-size:22px;font-weight:500;letter-spacing:-.025em;line-height:1.25;margin-top:10px}
+.card .sub{color:var(--w-60);font-size:14px;line-height:1.55;margin-top:10px;max-width:42ch}
+.card--hero h3{font-size:clamp(26px,2.4vw,32px)}
+
+.art{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+
+/* ---------- ideation note (hidden until toggled) ---------- */
+.note{
+  display:none;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:11px;line-height:1.7;color:var(--w-40);
+  border-top:1px dashed var(--w-10);padding-top:14px;
+}
+.note b{color:var(--primary);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase}
+.note span{color:var(--w-60)}
+body.notes .note{display:block}
+
+/* ============================================================
+   1 — UNIFIED BALANCE
+   Five wallet rows funnel through merge curves into one total.
+   ============================================================ */
+.merge{display:flex;align-items:center;gap:8px;width:100%;max-width:520px}
+.wallets{display:flex;flex-direction:column;gap:9px;flex:1}
+.wallets li{
+  display:flex;align-items:center;gap:9px;
+  background:var(--w-06);border:1px solid var(--w-06);border-radius:10px;
+  padding:9px 11px;font-size:12px;color:var(--w-60);
+}
+.wallets li b{margin-left:auto;color:var(--w-100);font-weight:500;font-family:"JetBrains Mono",monospace;font-size:11px}
+.dot{width:7px;height:7px;border-radius:99px;background:var(--c);flex:none}
+
+.merge-lines{width:86px;height:215px;flex:none;overflow:visible}
+.merge-lines path{fill:none;stroke:rgba(167,249,50,.28);stroke-width:1}
+.merge-lines circle{fill:var(--primary)}
+.flow{offset-distance:0%;animation:flow 2.8s cubic-bezier(.45,0,.55,1) infinite}
+.flow:nth-of-type(2){animation-delay:.35s}
+.flow:nth-of-type(3){animation-delay:.7s}
+.flow:nth-of-type(4){animation-delay:1.05s}
+.flow:nth-of-type(5){animation-delay:1.4s}
+.f1{offset-path:path("M0,12 C48,12 38,107 86,107")}
+.f2{offset-path:path("M0,59 C48,59 38,107 86,107")}
+.f3{offset-path:path("M0,107 L86,107")}
+.f4{offset-path:path("M0,155 C48,155 38,107 86,107")}
+.f5{offset-path:path("M0,202 C48,202 38,107 86,107")}
+@keyframes flow{
+  0%{offset-distance:0%;opacity:0}
+  12%{opacity:1}
+  80%{opacity:1}
+  100%{offset-distance:100%;opacity:0}
+}
+
+.merge-drop{display:none}
+
+.total{
+  flex:none;width:186px;
+  border:1px solid rgba(167,249,50,.25);border-radius:14px;
+  background:linear-gradient(180deg,rgba(167,249,50,.10),rgba(167,249,50,.02));
+  padding:16px 16px 18px;
+}
+.total-label{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w-40)}
+.total-value{
+  display:flex;align-items:baseline;margin-top:8px;
+  font-family:"JetBrains Mono",monospace;font-size:26px;font-weight:500;letter-spacing:-.02em;
+}
+.total-foot{margin-top:10px;font-size:11px;color:var(--primary);display:flex;align-items:center;gap:6px}
+.pulse{width:6px;height:6px;border-radius:99px;background:var(--primary);animation:pulse 2.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.45}}
+
+/* digit odometer — a strip of 0–9 translated by whole digit heights */
+.odo{display:inline-block;height:1.1em;overflow:hidden;vertical-align:baseline}
+.odo i{display:block;animation:roll 4s steps(10,end) infinite}
+.odo em{display:block;font-style:normal;line-height:1.1em}
+.odo--tens i{animation-duration:12s}
+@keyframes roll{to{transform:translate3d(0,-11em,0)}}
+
+/* ============================================================
+   2 — MULTICHAIN SWAP
+   From-leg and to-leg on different chains, one route between.
+   ============================================================ */
+.swap{width:100%;max-width:300px;display:flex;flex-direction:column;align-items:stretch;gap:0}
+.leg{
+  display:flex;align-items:center;gap:11px;
+  background:var(--w-06);border:1px solid var(--w-06);border-radius:14px;padding:14px;
+}
+.tok{
+  width:32px;height:32px;border-radius:99px;flex:none;display:grid;place-items:center;
+  font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:500;color:var(--ink);background:var(--tc);
+}
+.leg-copy b{display:block;font-size:14px;font-weight:500}
+.leg-copy small{display:block;font-size:11px;color:var(--w-40);margin-top:3px}
+.leg-side{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--w-40)}
+
+.route{position:relative;height:74px;margin-left:29px}
+.rail{position:absolute;left:0;top:0;bottom:0;width:1px;background:linear-gradient(180deg,var(--w-10),rgba(167,249,50,.35),var(--w-10))}
+.hop{position:absolute;left:-3px;width:7px;height:7px;border-radius:99px;background:var(--primary);opacity:.25;animation:hop 2.4s ease-in-out infinite}
+.hop:nth-child(2){top:12px}
+.hop:nth-child(3){top:34px;animation-delay:.3s}
+.hop:nth-child(4){top:56px;animation-delay:.6s}
+@keyframes hop{0%,70%,100%{transform:scale(1);opacity:.25}20%{transform:scale(1.6);opacity:1}}
+.route-tag{
+  position:absolute;left:22px;top:50%;transform:translateY(-50%);
+  font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--w-60);
+  border:1px solid var(--w-10);border-radius:8px;padding:6px 9px;white-space:nowrap;background:var(--card);
+}
+.route-tag em{color:var(--primary);font-style:normal}
+.swap-meta{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--w-40);text-align:center}
+
+/* ============================================================
+   3 — GASLESS
+   A receipt where the fee line strikes itself out.
+   ============================================================ */
+.receipt{width:100%;max-width:290px;border:1px solid var(--w-06);border-radius:14px;background:var(--w-06);padding:16px}
+.r-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--w-60);padding:7px 0}
+.r-row b{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:12px;color:var(--w-100)}
+.r-fee{position:relative;color:var(--w-40)}
+.r-fee b{color:var(--w-40)}
+.strike{
+  position:absolute;left:0;right:0;top:50%;height:1px;background:var(--red);
+  transform:scaleX(0);transform-origin:left center;animation:strike 5s ease-in-out infinite;
+}
+@keyframes strike{0%,14%{transform:scaleX(0)}34%,92%{transform:scaleX(1)}100%{transform:scaleX(1)}}
+.r-free{opacity:0;animation:freeIn 5s ease-out infinite}
+.r-free b{color:var(--primary)}
+.r-free span{color:var(--primary)}
+@keyframes freeIn{0%,36%{opacity:0;transform:translate3d(0,6px,0)}52%,94%{opacity:1;transform:none}100%{opacity:1;transform:none}}
+.r-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--w-10);margin-top:9px;padding-top:12px;font-size:13px}
+.r-total b{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:500}
+.gas-chip{
+  margin-top:14px;display:inline-flex;align-items:center;gap:7px;
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--primary);background:var(--primary-dim);border-radius:999px;padding:7px 11px;
+}
+
+/* ============================================================
+   4 — SPOT
+   Holdings ladder; allocation bars breathe, nothing jumps.
+   ============================================================ */
+.holdings{width:100%;max-width:290px;display:flex;flex-direction:column;gap:13px}
+.holdings li{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;font-size:12px}
+.h-name{font-family:"JetBrains Mono",monospace;color:var(--w-60)}
+.h-bar{height:6px;border-radius:99px;background:var(--w-06);overflow:hidden}
+.h-bar i{
+  display:block;height:100%;border-radius:99px;background:var(--primary);
+  transform-origin:left center;transform:scaleX(var(--w));
+  animation:breathe 6s ease-in-out infinite;
+}
+.holdings li:nth-child(2) .h-bar i{animation-delay:-1.5s}
+.holdings li:nth-child(3) .h-bar i{animation-delay:-3s}
+.holdings li:nth-child(4) .h-bar i{animation-delay:-4.5s;background:var(--w-20)}
+@keyframes breathe{0%,100%{transform:scaleX(var(--w))}50%{transform:scaleX(calc(var(--w) * .93))}}
+.h-val{font-family:"JetBrains Mono",monospace;color:var(--w-100)}
+
+/* ============================================================
+   5 — PERPS
+   One position card with a leverage track that slides.
+   ============================================================ */
+.pos{width:100%;max-width:290px;border:1px solid var(--w-06);border-radius:14px;background:var(--w-06);padding:16px}
+.pos-head{display:flex;align-items:center;gap:8px;font-size:13px}
+.pos-head b{font-weight:500}
+.tag{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:6px;background:var(--primary-dim);color:var(--primary)}
+.lev{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--w-60)}
+.pnl{font-family:"JetBrains Mono",monospace;font-size:24px;font-weight:500;color:var(--primary);margin:14px 0 4px;letter-spacing:-.02em}
+.pnl small{font-size:12px;color:var(--w-40);margin-left:7px}
+.track{position:relative;height:6px;border-radius:99px;background:var(--w-10);margin-top:20px}
+.track-fill{position:absolute;inset:0;border-radius:99px;background:linear-gradient(90deg,rgba(167,249,50,.35),var(--primary));transform-origin:left center;transform:scaleX(.42);animation:levFill 5s ease-in-out infinite alternate}
+.knob-layer{position:absolute;inset:0;animation:lev 5s ease-in-out infinite alternate}
+.knob{position:absolute;top:50%;left:-7px;width:14px;height:14px;margin-top:-7px;border-radius:99px;background:var(--primary);box-shadow:0 0 0 4px rgba(167,249,50,.18)}
+@keyframes lev{from{transform:translate3d(42%,0,0)}to{transform:translate3d(78%,0,0)}}
+@keyframes levFill{from{transform:scaleX(.42)}to{transform:scaleX(.78)}}
+.track-legend{display:flex;justify-content:space-between;margin-top:10px;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--w-40)}
+.liq{color:var(--red)}
+
+/* ============================================================
+   6 — PREDICTION (wide closer)
+   Live odds bar that drifts, two sides you can take.
+   ============================================================ */
+.card--wide{flex-direction:row;align-items:center;gap:40px;flex-wrap:wrap}
+.card--wide .card-head{flex:1 1 320px}
+.card--wide .art{flex:1 1 360px}
+.market{width:100%;max-width:420px;border:1px solid var(--w-06);border-radius:14px;background:var(--w-06);padding:18px}
+.market .q{font-size:14px;line-height:1.45;font-weight:500}
+.market .src{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--w-40);margin-top:8px}
+.odds{position:relative;height:8px;border-radius:99px;background:rgba(255,107,87,.35);overflow:hidden;margin:18px 0 10px}
+.odds i{position:absolute;inset:0;border-radius:99px;background:var(--primary);transform-origin:left center;transform:scaleX(.64);animation:odds 7s ease-in-out infinite alternate}
+@keyframes odds{from{transform:scaleX(.6)}to{transform:scaleX(.71)}}
+.odds-row{display:flex;justify-content:space-between;font-family:"JetBrains Mono",monospace;font-size:11px}
+.odds-row .y{color:var(--primary)}
+.odds-row .n{color:var(--red)}
+.sides{display:flex;gap:10px;margin-top:16px}
+.side{
+  flex:1;border-radius:10px;padding:11px;text-align:center;font-size:13px;font-weight:500;
+  border:1px solid var(--w-10);color:var(--w-60);background:transparent;
+}
+.side--yes{border-color:rgba(167,249,50,.35);color:var(--primary);background:var(--primary-dim)}
+.side--no{border-color:rgba(255,107,87,.3);color:var(--red)}
+
+/* ---------- desktop bento shape ---------- */
+@media (min-width:760px){
+  .bento{grid-auto-rows:minmax(0,auto)}
+  .card--hero{grid-column:span 4}
+  .card--swap-card{grid-column:span 2}
+  .card--third{grid-column:span 2}
+  .card--wide{grid-column:span 6}
+  .card--hero,.card--swap-card{min-height:440px}
+  .card--third{min-height:330px}
+}
+@media (max-width:759px){
+  .wrap{padding:44px 16px 64px}
+  .card{padding:22px;min-height:0}
+  .card--wide{flex-direction:column;align-items:stretch;gap:22px}
+  .merge{max-width:none;flex-direction:column;align-items:stretch;gap:0}
+  .merge-lines{display:none}
+  .merge-drop{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 0}
+  .merge-drop i{width:6px;height:6px;border-radius:99px;background:var(--primary);opacity:.25;animation:hop 2.4s ease-in-out infinite}
+  .merge-drop i:nth-child(2){animation-delay:.3s}
+  .merge-drop i:nth-child(3){animation-delay:.6s}
+  .total{width:100%}
+}
+
+/* Motion is decoration here; the layout and copy never depend on it. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <div>
+      <p class="kicker">Bento / ideation v1</p>
+      <h1>What AIMO actually does,<br />in six tiles.</h1>
+      <p>Copy and illustration concepts for the feature bento. Every tile pairs one claim with one moving picture of that claim — no stock icons, no screenshots. Sandbox only; nothing here is wired into the app.</p>
+    </div>
+    <button class="toggle" id="noteToggle" type="button">Ideation notes <b>off</b></button>
+  </header>
+
+  <main class="bento">
+
+    <!-- 1 ─ UNIFIED BALANCE (hero) -->
+    <article class="card card--hero">
+      <div class="card-head">
+        <p class="eyebrow">Unified balance</p>
+        <h3>Five wallets. One number.</h3>
+        <p class="sub">Main, Spot, Perps, Prediction and Outcome each keep their own funds. The balance you check doesn't care — it adds them up the moment anything moves.</p>
+      </div>
+      <div class="art" aria-hidden="true">
+        <div class="merge">
+          <ul class="wallets">
+            <li><span class="dot" style="--c:#a7f932"></span>Main<b>$4,120.00</b></li>
+            <li><span class="dot" style="--c:#7fd6ff"></span>Spot<b>$5,240.18</b></li>
+            <li><span class="dot" style="--c:#ffb347"></span>Perps<b>$1,880.44</b></li>
+            <li><span class="dot" style="--c:#c18cff"></span>Prediction<b>$940.00</b></li>
+            <li><span class="dot" style="--c:#ff6b57"></span>Outcome<b>$307.00</b></li>
+          </ul>
+          <svg class="merge-lines" viewBox="0 0 86 215" fill="none">
+            <path d="M0,12 C48,12 38,107 86,107" />
+            <path d="M0,59 C48,59 38,107 86,107" />
+            <path d="M0,107 L86,107" />
+            <path d="M0,155 C48,155 38,107 86,107" />
+            <path d="M0,202 C48,202 38,107 86,107" />
+            <circle class="flow f1" r="2.2" />
+            <circle class="flow f2" r="2.2" />
+            <circle class="flow f3" r="2.2" />
+            <circle class="flow f4" r="2.2" />
+            <circle class="flow f5" r="2.2" />
+          </svg>
+          <span class="merge-drop"><i></i><i></i><i></i></span>
+          <div class="total">
+            <p class="total-label">Total balance</p>
+            <p class="total-value">
+              $12,487.<span class="odo odo--tens"><i><em>0</em><em>1</em><em>2</em><em>3</em><em>4</em><em>5</em><em>6</em><em>7</em><em>8</em><em>9</em><em>0</em></i></span><span class="odo"><i><em>0</em><em>1</em><em>2</em><em>3</em><em>4</em><em>5</em><em>6</em><em>7</em><em>8</em><em>9</em><em>0</em></i></span>
+            </p>
+            <p class="total-foot"><span class="pulse"></span> Live across 5 wallets</p>
+          </div>
+        </div>
+      </div>
+      <p class="note"><b>Illustration</b><span>Five wallet rows on the left, merge curves in the middle, one total on the right.</span> Light pulses travel each curve on a stagger and land in the total; the last two digits of the total roll like an odometer so the number reads "live" without a counter script. Real build: pulses fire on balance-change events, curves drawn once in SVG. Alt direction worth testing — the total in the centre with wallets orbiting it, matching the hero orbit.</p>
+    </article>
+
+    <!-- 2 ─ MULTICHAIN SWAP -->
+    <article class="card card--swap-card">
+      <div class="card-head">
+        <p class="eyebrow">Multichain swap</p>
+        <h3>Swap across chains, not around them.</h3>
+        <p class="sub">Pick what you hold and what you want. AIMO finds the route and settles it in one confirmation.</p>
+      </div>
+      <div class="art" aria-hidden="true">
+        <div class="swap">
+          <div class="leg">
+            <span class="tok" style="--tc:#7fd6ff">US</span>
+            <span class="leg-copy"><b>250.00 USDC</b><small>Base</small></span>
+            <span class="leg-side">From</span>
+          </div>
+          <div class="route">
+            <span class="rail"></span>
+            <span class="hop"></span>
+            <span class="hop"></span>
+            <span class="hop"></span>
+            <span class="route-tag">Route found · <em>2 hops</em></span>
+          </div>
+          <div class="leg">
+            <span class="tok" style="--tc:#c18cff">SO</span>
+            <span class="leg-copy"><b>1.42 SOL</b><small>Solana</small></span>
+            <span class="leg-side">To</span>
+          </div>
+          <p class="swap-meta">1 confirmation · settles in ~4s</p>
+        </div>
+      </div>
+      <p class="note"><b>Illustration</b><span>Two legs, one vertical route between them.</span> Hop dots light downward in sequence — the bridge work made visible but compressed into a beat and a half, which is the point of the claim. Real build: swap the two legs for the actual pair the user last traded. Keep the rail vertical on desktop; it survives the mobile stack without a re-layout.</p>
+    </article>
+
+    <!-- 3 ─ GASLESS -->
+    <article class="card card--third">
+      <div class="card-head">
+        <p class="eyebrow">Gasless</p>
+        <h3>No gas token. No stuck trade.</h3>
+        <p class="sub">Network fees are sponsored, so you never hold a chain's coin just to move on it.</p>
+      </div>
+      <div class="art" aria-hidden="true">
+        <div class="receipt">
+          <div class="r-row"><span>Trade</span><b>$250.00</b></div>
+          <div class="r-row r-fee"><span>Network fee</span><b>$2.41</b><i class="strike"></i></div>
+          <div class="r-row r-free"><span>Sponsored by AIMO</span><b>$0.00</b></div>
+          <div class="r-total"><span>You pay</span><b>$250.00</b></div>
+          <span class="gas-chip">No ETH required</span>
+        </div>
+      </div>
+      <p class="note"><b>Illustration</b><span>A receipt that edits itself.</span> The fee line strikes through, then the sponsored line lifts in underneath and the total never moves — the whole claim in one four-second loop, no words needed. Cheaper alternative if the loop reads gimmicky: a static receipt with the fee already struck. Do not animate the total; a moving total reads as a price change.</p>
+    </article>
+
+    <!-- 4 ─ SPOT -->
+    <article class="card card--third">
+      <div class="card-head">
+        <p class="eyebrow">Spot</p>
+        <h3>Buy it. Hold it. It's yours.</h3>
+        <p class="sub">Real assets in a wallet that only does spot, so long-term holdings stay clear of whatever you're trading today.</p>
+      </div>
+      <div class="art" aria-hidden="true">
+        <ul class="holdings">
+          <li><span class="h-name">ETH</span><span class="h-bar"><i style="--w:.86"></i></span><span class="h-val">$2,410</span></li>
+          <li><span class="h-name">BTC</span><span class="h-bar"><i style="--w:.64"></i></span><span class="h-val">$1,780</span></li>
+          <li><span class="h-name">SOL</span><span class="h-bar"><i style="--w:.41"></i></span><span class="h-val">$690</span></li>
+          <li><span class="h-name">USDC</span><span class="h-bar"><i style="--w:.22"></i></span><span class="h-val">$360</span></li>
+        </ul>
+      </div>
+      <p class="note"><b>Illustration</b><span>A holdings ladder, not a price chart.</span> Spot is about ownership, so the picture is allocation — four bars, stablecoin dimmed so it reads as the resting slot. Bars breathe a few percent on a long offset loop, enough to feel live, not enough to look like a ticker. A candle chart here would say "trading", which is the perps tile's job.</p>
+    </article>
+
+    <!-- 5 ─ PERPS -->
+    <article class="card card--third">
+      <div class="card-head">
+        <p class="eyebrow">Perps</p>
+        <h3>Leverage, kept in its own lane.</h3>
+        <p class="sub">Size, margin and liquidation all live in the Perps wallet. A bad hour there never reaches the rest of your money.</p>
+      </div>
+      <div class="art" aria-hidden="true">
+        <div class="pos">
+          <div class="pos-head"><b>ETH-PERP</b><span class="tag">Long</span><span class="lev">5×</span></div>
+          <p class="pnl">+$312.40<small>+18.4%</small></p>
+          <div class="track"><i class="track-fill"></i><i class="knob-layer"><i class="knob"></i></i></div>
+          <div class="track-legend"><span>2×</span><span class="liq">Liq $2,104</span><span>10×</span></div>
+        </div>
+      </div>
+      <p class="note"><b>Illustration</b><span>One position card with a live leverage track.</span> The knob drifting between 2× and 10× is the interactive bit of the product shown at rest — and the liquidation price sitting in the legend is what makes "its own lane" concrete. On the real card make the track draggable and let the PnL respond; it is the one tile where interaction beats animation.</p>
+    </article>
+
+    <!-- 6 ─ PREDICTION (wide closer) -->
+    <article class="card card--wide">
+      <div class="card-head">
+        <p class="eyebrow">Prediction</p>
+        <h3>Trade what you think happens next.</h3>
+        <p class="sub">Take a side on real events at live odds, funded from a wallet you set aside for it — so a conviction bet and your portfolio never share a balance.</p>
+        <p class="note"><b>Illustration</b><span>A market card with odds that drift.</span> The split bar is the whole idea: two sides, priced, always summing to one. It drifts a few points on a slow loop so the word "live" is earned. Wide tile on purpose — it closes the bento and gives the question room to be a real sentence, which is what sells prediction markets to someone who has never traded one.</p>
+      </div>
+      <div class="art" aria-hidden="true">
+        <div class="market">
+          <p class="q">Will BTC close above $120,000 on Sep 30?</p>
+          <p class="src">Resolves from index price · 00:00 UTC</p>
+          <div class="odds"><i></i></div>
+          <div class="odds-row"><span class="y">Yes 64%</span><span class="n">No 36%</span></div>
+          <div class="sides">
+            <span class="side side--yes">Yes · 64¢</span>
+            <span class="side side--no">No · 36¢</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </main>
+</div>
+
+<script>
+  // Notes toggle only — every illustration above runs on CSS alone.
+  var btn = document.getElementById("noteToggle");
+  btn.addEventListener("click", function () {
+    var on = document.body.classList.toggle("notes");
+    btn.querySelector("b").textContent = on ? "on" : "off";
+  });
+</script>
+</body>
+</html>

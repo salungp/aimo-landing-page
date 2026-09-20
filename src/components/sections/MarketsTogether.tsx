@@ -75,17 +75,14 @@ export default function MarketsTogether() {
 
                   <WordReveal delay={0.05}>
                     <h2 className="text-[32px] leading-[normal] font-semibold tracking-[-0.02em] text-ink tablet:text-[40px] desktop:text-[48px]">
-                      <span className="block">AI that notices.</span>
-                      And acts with you.
+                      <span className="block">Your AI co-pilot for </span>
+                      every trade.
                     </h2>
                   </WordReveal>
 
                   <Reveal from="up" delay={0.1}>
                     <p className="text-base leading-[1.5] tracking-normal text-ink tablet:text-lg desktop:text-[20px]">
-                      Aimo watches every wallet and position you hold. When your
-                      exposure drifts, it tells you what shifted, why it matters,
-                      and what to do about it then runs the trade the moment you
-                      confirm, without ever leaving the app.
+                      Your AI companion helps you navigate through your portfolio, markets, and activities inside AIMO.
                     </p>
                   </Reveal>
                 </div>

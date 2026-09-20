@@ -73,17 +73,16 @@ export default function Hero() {
           <div className="mx-auto flex max-w-[820px] flex-col items-center gap-8 text-center tablet:gap-10">
             <WordReveal>
               <h1 className="text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] text-white tablet:text-[46px] desktop:text-[56px]">
-                <span className="block">One grip for</span>
+                <span className="block">One app, all</span>
                 <span className="block">
-                  <span className="text-primary">everything</span> you trade.
+                  <span className="text-primary"> trades.</span>
                 </span>
               </h1>
             </WordReveal>
 
             <TitleReveal delay={0.12}>
               <p className="max-w-[640px] text-base leading-[1.5] text-white/60 tablet:text-lg desktop:text-xl">
-                Trade across spot, perps, predictions, and outcomes with
-                dedicated wallets that stay connected in one place.
+                Trade spots, perpetuals, predictions, and outcomes with dedicated wallets in one place.
               </p>
             </TitleReveal>
 

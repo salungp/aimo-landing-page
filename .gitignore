@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# client handoff bundle, rebuilt by `npm run build:static`
+/aimo-landing-page-*.zip
+/CARA-UPLOAD.txt
+
 # production
 /build
 

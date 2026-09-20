@@ -221,35 +221,6 @@ body {
   background-size: cover;
 }
 
-/* HowItWorks card (Figma 258:13608). The section sits on one rounded card
- * instead of the plain page background: a soft green glow centred on the
- * card's own top edge, falling off toward near-black at the corners.
- *
- * Figma draws this as an SVG radial gradient with a `gradientTransform`
- * matrix rather than a plain circle — decoding it (center at the transform's
- * translation, the two axis radii from how far each basis vector travels)
- * gives an ellipse noticeably off-circular (87.34% / 132.4% of the card's own
- * box) centred at the card's horizontal middle and vertical top edge. Checked
- * back against the rendered design at several points (screenshot pixels vs.
- * the ellipse's own distance formula) and matched within 2/255 per channel,
- * so this is the matrix's own numbers, not a guess from the picture.
- *
- * Percent sizing ties the ellipse to the card's own box, which is exact at
- * the design's ~1416x876 proportions; there is no mobile frame for this
- * section, so a much taller stacked layout will stretch it more than Figma
- * ever draws, the same tradeoff made everywhere else in this file. */
-.hiw-card {
-  background-image: radial-gradient(
-    ellipse 87.34% 132.4% at 50% 0%,
-    #88b97d 0%,
-    #6b9263 25%,
-    #4f6c48 50%,
-    #32452e 75%,
-    #243221 87.5%,
-    #161f14 100%
-  );
-}
-
 /* OneBalance hub (Figma 244:1208). Each chain carries one short bar that runs
  * from its badge to the orb. The bar rides the chain with `offset-path`, which
  * is a transform-like property — the browser moves an already-rasterised layer
@@ -460,5 +431,415 @@ html.lenis body {
   .tr-rise {
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+
+/* ── Bento feature grid (Figma 284:24040) ─────────────────────────────────
+ *
+ * The card's edge is a vertical gradient, not a flat stroke: sampled off the
+ * Figma render it runs from rgba(255,255,255,.16) at the top to fully
+ * transparent at the bottom, on every card whatever its height. A `border`
+ * cannot carry a gradient, so it is painted as a 1px ring in ::before and
+ * punched out with an xor mask — that keeps the card's own background a flat
+ * colour (no second gradient to keep in sync) and leaves the radius to one
+ * place.
+ *
+ * Hover is the Phantom-style move the rest of this page uses: a small lift on
+ * the long expo-out curve, with the edge picking up the brand green as it
+ * goes. Pointer-gated, so a tap on a phone doesn't leave a card stuck lifted.
+ */
+.bento-card {
+  position: relative;
+  border-radius: 24px;
+  background: #171f1a;
+  overflow: hidden;
+  /* Nine cards, each with its own loop running inside it. Containment tells
+   * the browser that nothing in a card can affect anything outside it, so an
+   * illustration's animation can never invalidate the rest of the page's
+   * layout or paint — which is most of what made a section of nine live
+   * cards feel heavy. */
+  contain: layout paint style;
+}
+
+.bento-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+  transition: background 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* No `will-change` here on purpose: it would promote all nine cards to
+   * their own composited layer for the whole life of the page, to pay for a
+   * 3px lift that happens on one of them at a time. The transition promotes
+   * the one being hovered on its own. */
+  .bento-card {
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bento-card:hover {
+    transform: translate3d(0, -3px, 0);
+  }
+
+  .bento-card:hover::before {
+    background: linear-gradient(
+      180deg,
+      rgba(167, 249, 50, 0.4) 0%,
+      rgba(255, 255, 255, 0.06) 45%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+}
+
+/* The card texture, on the four cards the design gives one.
+ *
+ * The supplied asset is a dot field carried entirely in its alpha channel —
+ * every pixel is black, and the pattern and its falloff are the transparency.
+ * Painted directly it would darken the card; used as a mask over a light fill
+ * it is the grey dot field the design shows, which is the same way the rest of
+ * this page handles its textures (see `.mt-texture`).
+ *
+ * `cover` rather than a stretch: the asset is exactly 4x the design's 271x336
+ * card, so on those two it lands pixel-for-pixel, and on the other two it
+ * crops instead of turning the dots into ovals. The fill is the design's own
+ * #D9D9D9, and the mask's own alpha (0.33 at its densest) does the rest.
+ */
+.bento-texture {
+  background: #d9d9d9;
+  -webkit-mask-image: url("/images/bento/card-texture.webp");
+  mask-image: url("/images/bento/card-texture.webp");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: cover;
+  mask-size: cover;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* Figma paints the fade at the ends of the token strip, the leverage track and
+ * the prediction chart as a gradient-filled rectangle used as a mask. Same
+ * gradient, expressed directly. */
+.bento-fade-x {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
+}
+
+.bento-fade-left {
+  -webkit-mask-image: linear-gradient(270deg, #000 0%, #000 50%, transparent 100%);
+  mask-image: linear-gradient(270deg, #000 0%, #000 50%, transparent 100%);
+}
+
+/* The token strip drifts one card-pitch at a time. Two identical copies tile
+ * at exactly the pitch, so translating by one copy's width lands the second
+ * where the first began — transform-only, and seamless. */
+@keyframes bento-token-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.bento-token-track {
+  animation: bento-token-marquee 26s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-token-track {
+    animation: none;
+  }
+
+  .bento-card:hover {
+    transform: none;
+  }
+}
+
+/* ── Bento illustrations ──────────────────────────────────────────────────
+ * Every loop below is transform/opacity only and is paused (not reset) from
+ * the component when its card leaves the viewport, so a card resumes where it
+ * left off rather than restarting mid-story. */
+
+/* Transparency's badges are deliberately still. A slow breathe looked good
+ * and measured as 2.6ms of a 22ms frame at 4x CPU throttle — half of what
+ * the entire section costs — because each of the six pills has a gradient, an
+ * inset shadow and text, and animating opacity on that renders the subtree to
+ * its own layer every frame. The design has no motion here either. */
+.bento-badge {
+  box-shadow: 0px 1.718px 3.435px 0px rgba(0, 0, 0, 0.12);
+}
+
+/* Multichain swap: one 4.4s story — fund, route, settle — shared by the legs,
+ * the hops, the travelling value and the route pill via delays. */
+/* Note the missing -50%: these elements are centred with Tailwind's
+ * `-translate-x-1/2`, which in v4 sets the independent `translate` property.
+ * That composes with `transform` rather than being overridden by it, so a
+ * keyframe repeating the centring would shift the element twice. */
+@keyframes bento-swap-leg {
+  0%,
+  8%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  /* Lift only. An accompanying 1.012 scale read as a nudge in motion and as
+   * blurred text in every frame it was held for — 12px type resampled by 1%
+   * has nowhere to put the difference. */
+  3% {
+    transform: translate3d(0, -1.5px, 0);
+  }
+}
+
+.bento-swap-leg {
+  animation: bento-swap-leg 4.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes bento-swap-hop {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  10% {
+    transform: scale(1.65);
+    opacity: 1;
+  }
+  34% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+}
+
+.bento-swap-hop {
+  animation: bento-swap-hop 4.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* The value itself, sliding the 64px from the From row to the To row. */
+@keyframes bento-swap-pulse {
+  0%,
+  6% {
+    transform: translate3d(0, 0, 0) scale(0.6);
+    opacity: 0;
+  }
+  14% {
+    transform: translate3d(0, 4px, 0) scale(1);
+    opacity: 1;
+  }
+  46% {
+    transform: translate3d(0, 60px, 0) scale(1);
+    opacity: 1;
+  }
+  54%,
+  100% {
+    transform: translate3d(0, 66px, 0) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.bento-swap-pulse {
+  animation: bento-swap-pulse 4.4s cubic-bezier(0.37, 0, 0.29, 1) infinite;
+}
+
+@keyframes bento-swap-pill {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translate3d(-6px, 0, 0);
+  }
+  22%,
+  86% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.bento-swap-pill {
+  animation: bento-swap-pill 4.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes bento-swap-confirm {
+  0%,
+  52% {
+    opacity: 0.25;
+  }
+  62%,
+  92% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+
+.bento-swap-confirm {
+  opacity: 0.5;
+  animation: bento-swap-confirm 4.4s ease-out infinite;
+}
+
+/* Intelligence: each suggested question rises into the ask field. */
+@keyframes bento-ask-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.bento-ask {
+  animation: bento-ask-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Gasless: the fee is struck, then AIMO's line lifts in under it. */
+@keyframes bento-strike {
+  0%,
+  12% {
+    transform: scaleX(0);
+  }
+  34%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.bento-strike {
+  animation: bento-strike 5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes bento-covered {
+  0%,
+  34% {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  50%,
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.bento-covered {
+  animation: bento-covered 5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Unified balance: a green light walks the five wallets. */
+@keyframes bento-wallet-sweep {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  26% {
+    opacity: 0;
+  }
+}
+
+.bento-wallet-sweep {
+  opacity: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(167, 249, 50, 0.22), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgba(167, 249, 50, 0.45);
+  animation: bento-wallet-sweep 3.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-swap-leg,
+  .bento-swap-hop,
+  .bento-swap-pulse,
+  .bento-swap-pill,
+  .bento-swap-confirm,
+  .bento-ask,
+  .bento-strike,
+  .bento-covered,
+  .bento-wallet-sweep {
+    animation: none;
+  }
+
+  /* Without the loop these two need their finished state, not their first
+   * keyframe, or the card would read as a fee that was never covered. */
+  .bento-strike {
+    transform: scaleX(1);
+  }
+
+  .bento-covered {
+    opacity: 1;
+  }
+}
+
+/* ── Bento layout ─────────────────────────────────────────────────────────
+ *
+ * One flat grid of nine cards, placed three different ways.
+ *
+ * The desktop template is the interesting one. The Figma grid is 1000px wide
+ * with 12px gutters, but its two bands do not share a column rhythm: the top
+ * band runs 271/434/271 and the bottom band is three equal 325.33s. Five
+ * columns of 271 / 42.33 / 325.33 / 42.33 / 271 express both exactly — the
+ * 434 is columns 2-4 with their gutters, the bottom-left 325.33 is columns
+ * 1-2 with theirs — so the whole thing stays one grid and the cards can be
+ * re-placed freely at the other breakpoints instead of being nested in
+ * per-column wrappers that cannot reorder.
+ *
+ * Rows are 6px units with no row gap, and each card's span includes the
+ * gutter below it: 31 units is the 186px card, 56 units the 336px one, and a
+ * 2-unit hole is the 12px gutter. 122 units comes to the design's own 732px.
+ *
+ * Each card carries its placement as four custom properties, so the numbers
+ * live next to the card in BentoGrid.tsx rather than in a table over here.
+ */
+.bento-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 6px;
+    column-gap: 12px;
+    row-gap: 0;
+  }
+
+  .bento-grid > * {
+    grid-column: var(--t-col);
+    grid-row: var(--t-row);
+  }
+}
+
+@media (min-width: 1440px) {
+  .bento-grid {
+    grid-template-columns: 271fr 42.33fr 325.33fr 42.33fr 271fr;
+  }
+
+  .bento-grid > * {
+    grid-column: var(--d-col);
+    grid-row: var(--d-row);
   }
 }

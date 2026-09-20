@@ -3,9 +3,20 @@
  *
  *   npm run build:static
  *
- * Output is out/ — one .html per route, hashed CSS and JS under _next/, and
- * everything from public/ — with no Node process behind it. Drag that folder
- * onto Netlify, or FTP it to shared hosting, and the page works.
+ * Output is two things:
+ *
+ *   out/                          one .html per route, hashed CSS and JS under
+ *                                 _next/, everything from public/. No Node
+ *                                 process behind it.
+ *   aimo-landing-page-<date>.zip  the same tree, ready to send to a client,
+ *                                 with docs/CARA-UPLOAD.txt beside it.
+ *
+ * The archive holds the CONTENTS of out/ at its root, so index.html is the
+ * top level and not one folder down. That is the failure this packaging
+ * exists to prevent: absolute asset paths mean a site unpacked one level too
+ * deep serves bare HTML with no CSS, which looks like a broken build rather
+ * than a misplaced folder. The date in the filename is so nobody has to guess
+ * which archive was the one they sent.
  *
  * What this build gives up, and what is done about it:
  *
@@ -24,7 +35,7 @@
  * routes, no server actions, no dynamic params.
  */
 import { execFileSync } from "node:child_process";
-import { readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { CACHE_CONTROL, CACHED_DIRS } from "./cache-policy.mjs";
@@ -72,13 +83,34 @@ const bytes = (() => {
   return total;
 })();
 
+/* Packaged from inside out/ so the archive's root is the site itself. `zip -X`
+ * leaves out the resource forks and extra attributes macOS would otherwise
+ * bury in there. */
+const stamp = new Date().toISOString().slice(0, 10);
+const ZIP = `aimo-landing-page-${stamp}.zip`;
+rmSync(ZIP, { force: true });
+execFileSync("zip", ["-r", "-q", "-X", join("..", ZIP), ".", "-x", ".DS_Store", "-x", "__MACOSX/*"], {
+  cwd: OUT,
+  stdio: "inherit",
+});
+copyFileSync(join("docs", "CARA-UPLOAD.txt"), "CARA-UPLOAD.txt");
+
+const zipMb = (statSync(ZIP).size / 1024 / 1024).toFixed(1);
+
 console.log(`
 out/ is ready — ${(bytes / 1024 / 1024).toFixed(1)}MB${junk ? `, ${junk} .DS_Store removed` : ""}.
 
-  Netlify   drag out/ onto app.netlify.com/drop, or: npx netlify-cli deploy --prod --dir=out
-            out/_headers is picked up automatically.
+Ready to send:
 
-  Any other host: upload the contents of out/ to the web root. _headers is
+  ${ZIP}  ${zipMb}MB
+  ${"CARA-UPLOAD.txt".padEnd(ZIP.length)}  instructions for whoever installs it
+
+  Netlify   the client drags the .zip onto app.netlify.com/drop — no unzipping.
+            _headers inside it is picked up automatically.
+
+  Any other host: unzip and upload the CONTENTS to the web root. _headers is
   Netlify-only and will be ignored — to keep the caching, translate it into
   that host's own config (.htaccess on Apache, a location block on nginx).
+
+To deploy it yourself instead: npx netlify-cli deploy --prod --dir=out
 `);
