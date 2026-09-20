@@ -12,7 +12,7 @@ type InViewLoopVideoProps = {
   height: number;
   /**
    * Seconds into the clip to hold, paused, for reduced-motion visitors — the
-   * counterpart of InViewLottie's STILL_FRAME. Only needed when the poster is
+   * still frame a paused animation would hold. Only needed when the poster is
    * not itself a representative image: a composition that fades in from nothing
    * has an empty first frame, and without this those visitors would be left
    * looking at it. Omit it and the poster simply stays.

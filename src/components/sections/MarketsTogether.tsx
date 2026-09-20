@@ -105,7 +105,7 @@ export default function MarketsTogether() {
                    * viewport; at the design's 900 it stays 490. */}
                   <div className="mx-auto w-full max-w-[490px] overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#2C3D13_0%,#4F7C0E_100%)] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)] desktop:max-w-[min(490px,calc(100svh-330px))]">
                     {/* A pre-rendered video at every breakpoint, not the live
-                     * Lottie. Both encodes come from /lottie/markets-together.json,
+                     * Lottie. Both encodes come from assets/lottie/markets-together.json,
                      * which is now a build-time source only — nothing fetches it
                      * at runtime. It renders to ~2,080 SVG nodes behind 300 masks
                      * and 8 Gaussian blurs, and the SVG renderer re-rasterises

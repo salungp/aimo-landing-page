@@ -3,12 +3,15 @@
  * JSON is too expensive. Steps the animation frame by frame in a headless
  * browser and pipes the PNGs straight into ffmpeg, so nothing touches disk.
  *
- * Needs the dev server running (the JSON is fetched from it, same-origin).
+ * The JSON is read from disk. Its home is assets/lottie/, deliberately outside
+ * public/ — these compositions are source material for this script, and at
+ * ~20MB they have no business being served to visitors. This script is the
+ * only thing that reads them; what ships is the mp4 it writes.
  *
  *   node scripts/render-lottie.mjs <out.mp4> <json-path> <w> <h> <srcFps> <frames> <outFps> [outW]
  *
  * e.g. the mobile markets scene — 574x1241, 60fps, 1680 frames, out at 30:
- *   node scripts/render-lottie.mjs /tmp/m.mp4 /lottie/markets-together-mobile-2.json 574 1241 60 1680 30
+ *   node scripts/render-lottie.mjs /tmp/m.mp4 assets/lottie/markets-together-mobile-2.json 574 1241 60 1680 30
  *
  * Renders at deviceScaleFactor 2, i.e. exactly twice the composition, so the
  * vectors are never resampled and the result holds up on a 3x phone screen.
@@ -21,6 +24,7 @@
  */
 import { chromium } from "/Users/salungprastyo/Documents/aimo-landing-page/node_modules/playwright/index.mjs";
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 const OUT = process.argv[2];
 const SRC = process.argv[3];
@@ -69,8 +73,8 @@ await page.route("**/__render", (r) =>
 );
 await page.goto("http://localhost:3000/__render", { waitUntil: "domcontentloaded" });
 await page.addScriptTag({ path: LOTTIE });
-await page.evaluate(async (src) => {
-  const data = await (await fetch(src)).json();
+const animationData = JSON.parse(readFileSync(SRC, "utf8"));
+await page.evaluate(async (data) => {
   const anim = window.lottie.loadAnimation({
     container: document.getElementById("c"),
     renderer: "svg", loop: false, autoplay: false, animationData: data,
@@ -78,7 +82,7 @@ await page.evaluate(async (src) => {
   });
   await new Promise((r) => anim.addEventListener("DOMLoaded", r));
   window.__anim = anim;
-}, SRC);
+}, animationData);
 
 const t0 = Date.now();
 for (let i = 0; i < frames; i++) {
