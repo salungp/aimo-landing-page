@@ -53,6 +53,18 @@ export type BentoCardProps = {
   variant?: "default" | "feature";
   /** The dot field, on the four cards the design gives one. */
   texture?: boolean;
+  /**
+   * Below `tablet`, fill the card's own width instead of staying pinned to
+   * `artWidth`. Most illustrations self-centre (`left-1/2 -translate-x-1/2`)
+   * inside this box, so its width never shows — but Prediction's chart and
+   * Unified balance's icon row are pinned to the box's own edges (a flush
+   * chart, a flex row filling it edge to edge) rather than centred, tuned for
+   * their desktop slot's width. Below `tablet` the grid stacks to one column
+   * and that slot no longer applies, so those two clip (Unified balance) or
+   * leave a dead gap on one side (Prediction) that Figma's mobile frame
+   * doesn't have.
+   */
+  artFillMobile?: boolean;
   /** Position in the reveal stagger. */
   index?: number;
   className?: string;
@@ -82,6 +94,7 @@ export default function BentoCard({
   height,
   artTop,
   artWidth,
+  artFillMobile = false,
   variant = "default",
   texture = false,
   index = 0,
@@ -152,8 +165,15 @@ export default function BentoCard({
 
         <CardStateContext.Provider value={cardState}>
           <div
-            className="absolute bottom-0 left-1/2 -translate-x-1/2"
-            style={{ top: artTop, width: artWidth ?? "100%" }}
+            className={clsx(
+              "absolute bottom-0 left-1/2 -translate-x-1/2",
+              artFillMobile && "bento-art-fill"
+            )}
+            style={
+              artFillMobile
+                ? ({ top: artTop, "--art-w": `${artWidth ?? 0}px` } as CSSProperties)
+                : { top: artTop, width: artWidth ?? "100%" }
+            }
           >
             {children}
           </div>

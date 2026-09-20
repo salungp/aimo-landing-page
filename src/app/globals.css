@@ -850,6 +850,32 @@ html.lenis body {
   gap: 12px;
 }
 
+/* Prediction and Unified balance opt into this (`artFillMobile` on
+ * BentoCard): below `tablet` their illustration box is the card's own width
+ * instead of the fixed desktop slot width `--art-w` carries. See the prop's
+ * doc comment on BentoCard for why those two specifically need it. */
+.bento-art-fill {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .bento-art-fill {
+    width: var(--art-w);
+  }
+}
+
+/* Unified balance's five discs (see UnifiedBalanceArt): `position:relative`
+ * still honours an inline `left`/`top` as an offset from the flex-flow
+ * position below `tablet`, so the desktop coordinates can't just ride along
+ * as inline styles the way `.bento-art-fill`'s width does — they have to be
+ * off entirely until the element actually becomes `position:absolute`. */
+@media (min-width: 768px) {
+  .bento-icon-pos {
+    left: var(--icon-x);
+    top: var(--icon-y);
+  }
+}
+
 @media (min-width: 768px) {
   .bento-grid {
     display: grid;

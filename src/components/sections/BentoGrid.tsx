@@ -51,7 +51,7 @@ function place(
  */
 export default function BentoGrid() {
   return (
-    <section id="features" className="overflow-x-clip py-20 tablet:py-28 desktop:py-[120px]">
+    <section id="features" className="overflow-x-clip py-[60px] tablet:py-28 desktop:py-[120px]">
       <Container>
         <div className="bento-grid">
           <BentoCard
@@ -120,6 +120,7 @@ export default function BentoGrid() {
             height={336}
             artTop={93}
             artWidth={272}
+            artFillMobile
             style={place("1", "92 / span 56", "5", "1 / span 56")}
           >
             <PredictionArt />
@@ -144,6 +145,7 @@ export default function BentoGrid() {
             height={186}
             artTop={74}
             artWidth={325}
+            artFillMobile
             style={place("1", "150 / span 31", "1 / span 2", "92 / span 31")}
           >
             <UnifiedBalanceArt />
