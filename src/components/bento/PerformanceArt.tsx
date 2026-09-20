@@ -8,19 +8,26 @@ type Token = {
   symbol: string;
   cap: string;
   price: number;
-  /** A logo asset, or a glyph recoloured through a mask (see TokenMark). */
-  mark: { src: string; tint?: string; size: number };
+  /** A logo asset — a plain image, no runtime recolouring. */
+  mark: { src: string; size: number };
 };
 
 /* Prices are illustrative, and they drift from here rather than from a feed.
  *
  * BTC and LINK carry the two logos the Figma frame itself ships. ETH, SOL and
  * BNB reuse marks this repo already owns (public/images/orbit), which are
- * authored as translucent white glyphs for the hero's glass bubbles — so they
- * are painted through a mask instead of drawn directly, which puts each
- * token's own colour back and keeps all five on the design's white disc.
- * XRP and DOGE are not in the Figma file or in this repo; drop their marks in
- * and they slot straight into this list. */
+ * authored as translucent white glyphs for the hero's glass bubbles — the
+ * wrong colour for this card's white disc. They used to be recoloured at
+ * runtime with a CSS mask, one per icon, inside a row that is itself
+ * continuously translating — every mask forces its own compositing pass on
+ * every frame of the marquee, times two for the row's two copies, and WebKit
+ * charges far more for it than Chromium does. Baked instead: the three glyphs
+ * are copied into this folder with their `fill="white"` swapped for the
+ * token's own colour (`token-*-colored.svg`; the fill-opacity facets that
+ * gave ETH its two-tone shading are untouched, so the baked version is pixel
+ * for pixel what the mask used to produce), and loaded as a plain `<img>` —
+ * zero runtime cost, same pixels. The orbit originals are untouched; other
+ * sections still want them white. */
 const TOKENS: Token[] = [
   {
     symbol: "BTC",
@@ -32,13 +39,13 @@ const TOKENS: Token[] = [
     symbol: "ETH",
     cap: "$380B MC",
     price: 2480.4,
-    mark: { src: "/images/orbit/token-eth.svg", tint: "#627eea", size: 20 },
+    mark: { src: "/images/bento/token-eth-colored.svg", size: 20 },
   },
   {
     symbol: "SOL",
     cap: "$95B MC",
     price: 148.22,
-    mark: { src: "/images/orbit/token-sol.svg", tint: "#9945ff", size: 20 },
+    mark: { src: "/images/bento/token-sol-colored.svg", size: 20 },
   },
   {
     symbol: "LINK",
@@ -50,7 +57,7 @@ const TOKENS: Token[] = [
     symbol: "BNB",
     cap: "$88B MC",
     price: 592.1,
-    mark: { src: "/images/orbit/token-bnb.svg", tint: "#f0b90b", size: 20 },
+    mark: { src: "/images/bento/token-bnb-colored.svg", size: 20 },
   },
 ];
 
@@ -62,44 +69,19 @@ function formatPrice(value: number) {
   return [Number(whole).toLocaleString("en-US"), cents] as const;
 }
 
-/**
- * The 38px disc from the design: a white circle with the token's mark on it.
- * A tinted mark is painted as a mask so the repo's white hero glyphs come
- * back in the token's own colour — and their internal opacities survive as
- * shading, which is what gives ETH its two-tone facets.
- */
+/** The 38px disc from the design: a white circle with the token's mark on it. */
 function TokenMark({ mark, symbol }: { mark: Token["mark"]; symbol: string }) {
   return (
     <span className="relative block size-[38px] shrink-0 overflow-hidden rounded-full bg-white">
-      {mark.tint ? (
-        <span
-          aria-hidden
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{
-            width: mark.size,
-            height: mark.size,
-            background: mark.tint,
-            WebkitMaskImage: `url(${mark.src})`,
-            maskImage: `url(${mark.src})`,
-            WebkitMaskSize: "contain",
-            maskSize: "contain",
-            WebkitMaskPosition: "center",
-            maskPosition: "center",
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-          }}
-        />
-      ) : (
-        <img
-          src={mark.src}
-          alt=""
-          aria-hidden
-          loading="lazy"
-          decoding="async"
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ width: mark.size, height: mark.size }}
-        />
-      )}
+      <img
+        src={mark.src}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        decoding="async"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{ width: mark.size, height: mark.size }}
+      />
       <span className="sr-only">{symbol}</span>
     </span>
   );
@@ -151,19 +133,13 @@ function TokenItem({ token, change, direction }: { token: Token; change: number;
             className="flex items-center gap-[2px] transition-colors duration-300"
             style={{ color: up ? "#10b93d" : "#e03e3e" }}
           >
-            <span
+            <img
+              src={up ? "/images/bento/arrow-up.svg" : "/images/bento/arrow-down.svg"}
+              alt=""
               aria-hidden
+              loading="lazy"
+              decoding="async"
               className="size-[10px] shrink-0"
-              style={{
-                background: up ? "#10b93d" : "#e03e3e",
-                transform: up ? undefined : "rotate(180deg)",
-                WebkitMaskImage: "url(/images/bento/arrow-up.svg)",
-                maskImage: "url(/images/bento/arrow-up.svg)",
-                WebkitMaskSize: "contain",
-                maskSize: "contain",
-                WebkitMaskRepeat: "no-repeat",
-                maskRepeat: "no-repeat",
-              }}
             />
             <RollingNumber
               value={`${Math.abs(change).toFixed(2)}%`}

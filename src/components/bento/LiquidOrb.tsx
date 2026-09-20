@@ -161,7 +161,21 @@ export default function LiquidOrb({
       return transitionTarget === "thinking" ? 1 - (1 - raw) ** 3 : raw * raw * (3 - 2 * raw);
     }
 
+    // Once a transition finishes, `progress` pins at 1 forever — but nothing
+    // before this flag noticed, so `sample` kept re-running the full
+    // interpolation anyway: 133 floats, ~24 of them through `mixSrgb` (an
+    // exponent both ways, srgb <-> linear), every drawn frame, for as long as
+    // the card stayed in view between transitions. The answer was already
+    // sitting in `target` untouched. `settled` short-circuits that once
+    // `displayed` has actually caught up to it. Measured cost of the loop
+    // itself was too small to show up in this project's own profiling (real
+    // WebKit, CDP script-duration counters) — kept anyway, since recomputing
+    // an unchanging answer every frame forever has no upside to weigh against
+    // "it's cheap here."
+    let settled = true;
+
     function sample(now: number) {
+      if (settled) return displayed;
       const progress = progressAt(now);
       for (let i = 3; i < displayed.length; i += 1) {
         // The colour bank starts at float 40 and runs RGBA; only the three
@@ -172,6 +186,7 @@ export default function LiquidOrb({
           ? mixSrgb(from[i], target[i], progress)
           : from[i] + (target[i] - from[i]) * progress;
       }
+      if (progress >= 1) settled = true;
       return displayed;
     }
 
@@ -184,6 +199,7 @@ export default function LiquidOrb({
       transitionStart = now;
       transitionDuration = next === "thinking" ? ACTIVATION_MS : SETTLE_MS;
       current = next;
+      settled = false;
     }
 
     async function start() {

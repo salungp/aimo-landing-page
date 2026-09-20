@@ -461,17 +461,24 @@ html.lenis body {
   contain: layout paint style;
 }
 
-.bento-card::before {
+/* Two pseudo-elements stacked on the same ring, not one gradient that swaps
+ * on hover. `::before` painted the rest-state edge and swapped its own
+ * `background` on hover — a paint property, so WebKit had to re-rasterise
+ * the masked gradient ring on every frame of that 0.55s transition. A reader
+ * whose cursor sits over a card while the page scrolls (a trackpad habit)
+ * was paying for that repaint on top of everything else moving. `::after`
+ * now carries the hover gradient permanently, sitting at opacity 0 until
+ * hovered — the transition is `opacity`, which is compositor-only, so
+ * hovering costs a cross-fade between two already-painted layers instead of
+ * repainting either. Same two gradients, same duration and easing, same
+ * pixels at both ends. */
+.bento-card::before,
+.bento-card::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.16) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -482,7 +489,25 @@ html.lenis body {
   mask-composite: exclude;
   pointer-events: none;
   z-index: 2;
-  transition: background 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-card::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.bento-card::after {
+  background: linear-gradient(
+    180deg,
+    rgba(167, 249, 50, 0.4) 0%,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -498,13 +523,8 @@ html.lenis body {
     transform: translate3d(0, -3px, 0);
   }
 
-  .bento-card:hover::before {
-    background: linear-gradient(
-      180deg,
-      rgba(167, 249, 50, 0.4) 0%,
-      rgba(255, 255, 255, 0.06) 45%,
-      rgba(255, 255, 255, 0) 100%
-    );
+  .bento-card:hover::after {
+    opacity: 1;
   }
 }
 
@@ -609,6 +629,18 @@ html.lenis body {
 
 .bento-swap-leg {
   animation: bento-swap-leg 4.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  /* The one element in the section that both transforms AND carries a
+   * backdrop-filter. WebKit does not reliably cache a backdrop-filter's
+   * blurred sample into a layer it can just re-position — without a hint it
+   * tends to resample the blur from scratch on every frame the element's own
+   * transform changes, which on Safari is the difference between this card
+   * costing nothing and costing noticeably more than every other card in the
+   * section combined. `will-change: transform` is the documented workaround:
+   * it tells the engine up front to commit this element to its own
+   * compositor layer, so the 1.5px lift moves an already-blurred texture
+   * instead of re-blurring on each frame. Scoped to two elements total
+   * (there are only ever two Legs), so it costs nothing to leave permanent. */
+  will-change: transform;
 }
 
 @keyframes bento-swap-hop {

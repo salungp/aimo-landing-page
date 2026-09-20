@@ -419,9 +419,18 @@ function DeckCard({
   g: Geometry;
 }) {
   const f = cardFrame(phase, g, index, copy);
+  // `will-change` only earns its cost while a card's own transform is
+  // actually animating — the spring in "ladder" and "row". In "pocket" and
+  // "marquee" `cardTransition` returns `duration: 0` (the strip's motion in
+  // "marquee" is the parent's CSS animation, not this element's own
+  // transform), so there's nothing here to promote a layer for. Left on
+  // permanently this promotes every copy of all five cards — up to two dozen
+  // elements — for the entire time the section sits in view, the same
+  // left-on-forever pattern `WordReveal` hit and fixed.
+  const animating = phase === "ladder" || phase === "row";
   return (
     <motion.div
-      className="absolute top-0 left-1/2 origin-top will-change-transform"
+      className={clsx("absolute top-0 left-1/2 origin-top", animating && "will-change-transform")}
       style={{
         width: g.cardW,
         height: g.cardH,
