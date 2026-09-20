@@ -1,0 +1,26 @@
+# Build configuration for Netlify.
+#
+# Netlify auto-detects most of this for a Next.js project. It is written out
+# anyway so the build is reproducible and does not change under us when
+# Netlify's detection heuristics do.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# The Node version is pinned in .nvmrc (22.23.2), which Netlify reads on its
+# own. Setting NODE_VERSION here would take precedence over that file and give
+# us two places to keep in sync, so it is deliberately left out.
+
+# There is no [[plugins]] block for @netlify/plugin-nextjs on purpose. Netlify
+# installs the Next.js adapter automatically and updates it on every build;
+# declaring it here would pin the version, which Netlify recommends against.
+# This project is on Next 16, ahead of Netlify's verified adapter, so tracking
+# their latest is what we want — verify a Deploy Preview before promoting to
+# production.
+
+# Cache-Control for everything in public/ is set by headers() in
+# next.config.ts and applied by the Next.js adapter. Do not add a [[headers]]
+# block for those paths here: netlify.toml headers and Next headers are
+# applied by different layers, and having both means changing the policy in
+# one place silently leaves the other behind.
