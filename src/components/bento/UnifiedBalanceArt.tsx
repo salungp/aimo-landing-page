@@ -34,7 +34,7 @@ export default function UnifiedBalanceArt() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <div className="flex h-full items-center justify-between tablet:block tablet:h-auto">
+      <div className="flex h-full items-center justify-between px-5 tablet:block tablet:h-auto tablet:px-0">
         {ICONS.map((icon, i) => {
           const play: CSSProperties = {
             animationDelay: `${i * 0.38}s`,

@@ -88,7 +88,7 @@ export default function Hero() {
 
             <Reveal from="up" delay={0.22}>
               <a
-                href="#start-trading"
+                href="https://app.aimo.xyz/"
                 className="rounded-full bg-gradient-to-b from-primary to-primary-dark px-6 py-2.5 text-base font-semibold text-ink transition-transform hover:scale-[1.03]"
               >
                 Start trading

@@ -47,7 +47,7 @@ export default function MarketsTogether() {
        * exactly how long the card holds before it scrolls away. */}
       <div className="relative desktop:h-[150svh]">
         <div className="desktop:sticky desktop:top-0">
-          <div className="relative isolate flex items-center py-20 tablet:py-28 desktop:h-svh desktop:py-0">
+          <div className="relative isolate flex items-center py-[60px] tablet:py-28 desktop:h-svh desktop:py-0">
             {/* The card. Vertical gradient sampled off the design's render: it
              * starts on the brand green and turns over at the halfway mark,
              * which a two-stop ramp does not reproduce. The texture over it is
@@ -56,7 +56,7 @@ export default function MarketsTogether() {
              * a black layer (see that rule: the mask cost Firefox this section). */}
             <div
               aria-hidden
-              className="absolute inset-y-0 right-3 left-3 -z-10 overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#A7F932_0%,#79C60C_50%,#4D7A0D_100%)] desktop:inset-y-3"
+              className="absolute inset-y-0 right-3 left-3 -z-10 overflow-hidden rounded-[20px] bg-[linear-gradient(to_bottom,#A7F932_0%,#79C60C_50%,#4D7A0D_100%)] desktop:inset-y-3 tablet:rounded-[32px]"
             >
               <div className="mt-texture absolute inset-0" />
             </div>
@@ -65,7 +65,7 @@ export default function MarketsTogether() {
               {/* Copy first in the DOM so the heading leads on a phone and for
                * anything reading the page in order; `row-reverse` puts the scene
                * back on the left once the two sit side by side. */}
-              <div className="flex flex-col items-start gap-12 px-3 tablet:px-0 desktop:flex-row-reverse desktop:items-center desktop:justify-center desktop:gap-[50px]">
+              <div className="flex flex-col items-start gap-[36px] px-3 tablet:gap-12 tablet:px-0 desktop:flex-row-reverse desktop:items-center desktop:justify-center desktop:gap-[50px]">
                 <div className="flex flex-col gap-3 desktop:w-[460px] desktop:shrink-0">
                   <TitleReveal>
                     <p className="font-mono text-xs leading-[1.5] font-medium tracking-[0.04em] text-ink uppercase tablet:text-[13px] desktop:text-sm">
@@ -100,7 +100,7 @@ export default function MarketsTogether() {
                    * window cannot spare while keeping 165px clear above and below
                    * — the design's own margin. The cap only bites under ~820px of
                    * viewport; at the design's 900 it stays 490. */}
-                  <div className="mx-auto w-full max-w-[490px] overflow-hidden rounded-[32px] bg-[linear-gradient(to_bottom,#2C3D13_0%,#4F7C0E_100%)] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)] desktop:max-w-[min(490px,calc(100svh-330px))]">
+                  <div className="mx-auto w-full max-w-[490px] overflow-hidden rounded-[20px] bg-[linear-gradient(to_bottom,#2C3D13_0%,#4F7C0E_100%)] shadow-[inset_0px_2px_4px_1px_rgba(255,255,255,0.06)] tablet:rounded-[32px] desktop:max-w-[min(490px,calc(100svh-330px))]">
                     {/* A pre-rendered video at every breakpoint, not the live
                      * Lottie. Both encodes come from assets/lottie/markets-together.json,
                      * which is now a build-time source only — nothing fetches it

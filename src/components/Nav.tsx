@@ -63,7 +63,7 @@ export default function Nav() {
             </div>
 
             {/* Desktop/tablet CTA — mobile gets a hamburger instead, CTA lives in the opened menu. */}
-            <a href={sectionHref("#start-trading")} className={`hidden tablet:flex ${ctaClass}`}>
+            <a href={sectionHref("https://app.aimo.xyz/")} className={`hidden tablet:flex ${ctaClass}`}>
               Start trading
             </a>
 

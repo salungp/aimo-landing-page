@@ -15,10 +15,8 @@ import logo from "../../../public/images/shared/logo-primary.svg";
 // they're structurally symmetric render positions. An explicit id sidesteps
 // that entirely instead of relying on an assumption about useId's scoping.
 const socials = [
-  { label: "Instagram", href: "#", Icon: InstagramIcon, key: "ig" },
-  { label: "X (Twitter)", href: "#", Icon: TwitterIcon, key: "x" },
-  { label: "Discord", href: "#", Icon: DiscordIcon, key: "dc" },
-  { label: "YouTube", href: "#", Icon: YoutubeIcon, key: "yt" },
+  { label: "Instagram", href: "https://www.instagram.com/aimo.xyz", Icon: InstagramIcon, key: "ig" },
+  { label: "X (Twitter)", href: "https://x.com/aimo_xyz", Icon: TwitterIcon, key: "x" },
 ];
 
 export default function Footer() {
@@ -142,7 +140,7 @@ function CtaCopy() {
 function CtaButton() {
   return (
     <a
-      href="#start-trading"
+      href="https://app.aimo.xyz/"
       className="inline-flex w-fit items-center gap-2.5 rounded-full bg-ink px-6 py-2.5 text-base font-medium text-white transition-colors duration-200 hover:bg-[#333333]"
     >
       Start trading

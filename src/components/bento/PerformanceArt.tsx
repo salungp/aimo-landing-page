@@ -39,13 +39,13 @@ const TOKENS: Token[] = [
     symbol: "ETH",
     cap: "$380B MC",
     price: 2480.4,
-    mark: { src: "/images/bento/token-eth-colored.svg", size: 20 },
+    mark: { src: "/images/bento/token-eth.svg", size: 38 },
   },
   {
     symbol: "SOL",
     cap: "$95B MC",
     price: 148.22,
-    mark: { src: "/images/bento/token-sol-colored.svg", size: 20 },
+    mark: { src: "/images/bento/token-solana-2.svg", size: 40 },
   },
   {
     symbol: "LINK",
@@ -57,7 +57,7 @@ const TOKENS: Token[] = [
     symbol: "BNB",
     cap: "$88B MC",
     price: 592.1,
-    mark: { src: "/images/bento/token-bnb-colored.svg", size: 20 },
+    mark: { src: "/images/bento/token-bnb.svg", size: 38 },
   },
 ];
 
