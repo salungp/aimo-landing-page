@@ -471,6 +471,10 @@ function CardFace({ card, width }: { card: Card; width: number | null }) {
         minHeight: width ? undefined : 192,
       }}
     >
+      {/* Only the Main Wallet carries this — Figma 298:13434, a background the
+       * other four cards don't have. */}
+      {card.id === "main" && <MainWalletBackground />}
+
       <div className="flex items-center" style={{ gap: 11.494 * s }}>
         <div
           className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#e5fdc3] via-[#9bf31c] to-[#8fee07]"
@@ -508,6 +512,58 @@ function CardFace({ card, width }: { card: Card; width: number | null }) {
         className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_2px_1px_rgba(255,255,255,0.06)]"
       />
     </div>
+  );
+}
+
+/**
+ * Main Wallet's own background (Figma 298:13434) — the one thing this build
+ * changes on the wallet card. The other four cards stay flat #171f1a.
+ *
+ * Two layers over the card's own fill: the same dot field the bento cards use
+ * (`.bento-texture`, reused rather than exported again since it's pixel-for-
+ * pixel the same asset), and five soft blurred blobs — a green accent behind
+ * the icon and four neutral ones lower in the card, each a shade of the same
+ * #D9D9D9 at 40% traced straight from Figma's node metadata (every glow's
+ * bounding box there is exactly its ellipse's own bounding box, so the box
+ * *is* the ellipse — no need to reverse-engineer Figma's own blur-clip export
+ * artifacts). Drawn as one inline SVG at the design's 304 x 192, not baked to
+ * a raster: a card here stretches well past that at `desktop`, and a blur
+ * this soft would show as soft *pixels* at 2x, where an SVG filter just
+ * re-rasterises crisp. It never repaints after mount — nothing here
+ * animates — so the one-time filter cost is not a scroll-time concern the way
+ * a live backdrop-filter would be.
+ */
+function MainWalletBackground() {
+  return (
+    <>
+      <div aria-hidden className="bento-texture absolute inset-0 -z-10 rounded-[inherit]" />
+      <svg
+        aria-hidden
+        viewBox="0 0 304 192"
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute inset-0 -z-10 size-full"
+      >
+        <defs>
+          <linearGradient id="wallet-main-glow" x1="152" y1="-37" x2="152" y2="63" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#A7F932" />
+            <stop offset="1" stopColor="#8FEE07" />
+          </linearGradient>
+          <filter id="wallet-main-blur-40" x="-200" y="-200" width="704" height="592" filterUnits="userSpaceOnUse">
+            <feGaussianBlur stdDeviation="40" />
+          </filter>
+          <filter id="wallet-main-blur-50" x="-200" y="-200" width="704" height="592" filterUnits="userSpaceOnUse">
+            <feGaussianBlur stdDeviation="50" />
+          </filter>
+        </defs>
+        <g fill="#D9D9D9" opacity="0.4" filter="url(#wallet-main-blur-40)">
+          <ellipse cx="21.87" cy="98.65" rx="26.27" ry="22.09" />
+          <ellipse cx="72.5" cy="117.5" rx="51.48" ry="43.29" />
+          <ellipse cx="283.5" cy="79.5" rx="54.5" ry="45.5" />
+          <ellipse cx="250" cy="166.5" rx="51" ry="42.5" />
+        </g>
+        <circle cx="152" cy="13" r="50" fill="url(#wallet-main-glow)" opacity="0.2" filter="url(#wallet-main-blur-50)" />
+      </svg>
+    </>
   );
 }
 

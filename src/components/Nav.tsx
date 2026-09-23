@@ -11,6 +11,7 @@ const links = [
   { label: "Wallets", hash: "#wallets" },
   { label: "Features", hash: "#features" },
   { label: "FAQ", hash: "#faq" },
+  { label: "About", hash: "/about" },
 ];
 
 // Figma's nav pill and the opened mobile menu share the same dark card
@@ -35,7 +36,9 @@ export default function Nav() {
   // hash gets prefixed into a real route — and it stays a bare hash on home so
   // that clicking it there keeps Lenis's smooth scroll instead of reloading.
   const onHome = usePathname() === "/";
-  const sectionHref = (hash: string) => (onHome ? hash : `/${hash}`);
+  // Page routes like "/about" already are real routes and pass through as-is.
+  const sectionHref = (hash: string) =>
+    onHome || !hash.startsWith("#") ? hash : `/${hash}`;
 
   return (
     <div className="fixed inset-x-0 top-4 z-50 tablet:top-5">

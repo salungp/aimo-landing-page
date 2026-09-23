@@ -184,6 +184,21 @@ body {
   mask-size: 108.065% 123.556%;
 }
 
+/* About page glass logo (Figma 304:2867), built like .ob-backdrop above: the
+ * picture at full strength under Figma's own mask export — the 500x435 pill
+ * ("liquid-glass 2") blurred by 70 at 80%, on a 780x715 canvas that pads it by
+ * 140 on every side so the blur has room to fall off. The element carrying
+ * this class *is* that canvas (sized in page.tsx), so the mask is simply
+ * stretched over it. Mask mode is alpha, so the pill's grey fill is inert. */
+.about-glass {
+  -webkit-mask-image: url("/images/about/glass-mask.svg");
+  mask-image: url("/images/about/glass-mask.svg");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
 /* MarketsTogether card texture (Figma 258:10913). The design draws 2,679
  * isometric chevrons over the green gradient, and every one of them is pure
  * black — the group carries no colour at all, only alpha, topping out at
@@ -551,6 +566,14 @@ html.lenis body {
   mask-size: cover;
   -webkit-mask-position: center;
   mask-position: center;
+}
+
+/* Intelligence's own dot field, supplied by the designer at 868x672 (2x the
+ * 434x336 card). Unlike card-texture.webp it carries its colour, light greys
+ * at up to 40% alpha, so it is painted directly rather than used as a mask.
+ * Lossless WebP of the supplied PNG. */
+.bento-texture-intelligence {
+  background: url("/images/bento/intelligence-texture.webp") center / cover no-repeat;
 }
 
 /* Figma paints the fade at the ends of the token strip, the leverage track and

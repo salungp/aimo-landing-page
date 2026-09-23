@@ -103,7 +103,7 @@ export default function BentoGrid() {
               </>
             }
             variant="feature"
-            texture
+            texture="intelligence"
             height={336}
             artTop={103}
             artWidth={434}

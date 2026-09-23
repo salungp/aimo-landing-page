@@ -186,7 +186,7 @@ function FooterContent() {
       </div>
 
       <div className="flex items-center justify-between text-sm leading-[1.5] tracking-[-0.01em] text-white">
-        <p>© 2026 AIMO. All rights reserved.</p>
+        <p>© 2026 AIMO Technologies Limited</p>
         <LegalLinks className="hidden tablet:flex" />
       </div>
     </div>
@@ -213,6 +213,9 @@ function SocialRow({ variant }: { variant: "mobile" | "desktop" }) {
 function LegalLinks({ className = "flex" }: { className?: string }) {
   return (
     <div className={`items-center gap-9 ${className}`}>
+      <Link href="/about" className="transition-opacity hover:opacity-60">
+        About
+      </Link>
       <Link href="/terms-of-service" className="transition-opacity hover:opacity-60">
         Terms of Usage
       </Link>

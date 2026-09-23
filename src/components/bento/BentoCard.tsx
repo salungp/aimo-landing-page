@@ -51,8 +51,11 @@ export type BentoCardProps = {
   artWidth?: number;
   /** Intelligence is the one card whose header is centred and set at 20px. */
   variant?: "default" | "feature";
-  /** The dot field, on the four cards the design gives one. */
-  texture?: boolean;
+  /**
+   * The dot field, on the four cards the design gives one. `"intelligence"`
+   * swaps in that card's own dot field (see `.bento-texture-intelligence`).
+   */
+  texture?: boolean | "intelligence";
   /**
    * Below `tablet`, fill the card's own width instead of staying pinned to
    * `artWidth`. Most illustrations self-centre (`left-1/2 -translate-x-1/2`)
@@ -139,7 +142,7 @@ export default function BentoCard({
       }
     >
       <article className={clsx("bento-card", className)} style={{ height }}>
-        {texture && <CardTexture />}
+        {texture && <CardTexture variant={texture === "intelligence" ? "intelligence" : "default"} />}
 
         <div
           className={clsx(
@@ -194,6 +197,14 @@ export default function BentoCard({
  * `.bento-texture` in globals.css for how a black-alpha field is painted as
  * light.
  */
-export function CardTexture() {
-  return <div aria-hidden className="bento-texture pointer-events-none absolute inset-0" />;
+export function CardTexture({ variant = "default" }: { variant?: "default" | "intelligence" }) {
+  return (
+    <div
+      aria-hidden
+      className={clsx(
+        "pointer-events-none absolute inset-0",
+        variant === "intelligence" ? "bento-texture-intelligence" : "bento-texture"
+      )}
+    />
+  );
 }
