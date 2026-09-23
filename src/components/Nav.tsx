@@ -15,12 +15,20 @@ const links = [
 ];
 
 // Figma's nav pill and the opened mobile menu share the same dark card
-// surface (#171f1a) and edge treatment: a 20%-white hairline border plus a
-// two-layer shadow — a 1px solid "shadow" the same colour as the fill
-// (crisps up the edge over whatever sits behind it) and a soft drop shadow
-// underneath. Both node specs (102:23267 and 145:749) use this exact pair.
+// surface (#171f1a) and edge treatment: a 1px border that fades from 20%
+// white at the top to nothing at the bottom, plus a two-layer shadow — a 1px
+// solid "shadow" the same colour as the fill (crisps up the edge over
+// whatever sits behind it) and a soft drop shadow underneath.
+//
+// The MCP reports the border as a flat white/20; the renders of 304:112 and
+// 145:749 say otherwise. Top edge 19.6%, halfway 9.4%, bottom edge equal to
+// the fill: a linear fade, composited over the card's own fill rather than
+// the page. Hence three background layers instead of a border colour: the
+// fill clipped to the padding box on top, the gradient under it showing only
+// through the transparent 1px border, and the fill again as the base colour
+// so the gradient sits on #171f1a exactly as Figma paints an inside stroke.
 const surfaceClass =
-  "border border-white/20 bg-[#171f1a] shadow-[0px_0px_0px_1px_#171f1a,0px_2px_4px_0px_rgba(0,0,0,0.16)]";
+  "border border-transparent [background:linear-gradient(#171f1a,#171f1a)_padding-box,linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0))_border-box_#171f1a] shadow-[0px_0px_0px_1px_#171f1a,0px_2px_4px_0px_rgba(0,0,0,0.16)]";
 
 // The CTA is a bright green gradient pill with dark text in both the
 // desktop bar and the opened mobile menu (Figma nodes 206:961 / 206:983) —
@@ -50,10 +58,12 @@ export default function Nav() {
               onClick={() => setOpen(false)}
               className="flex shrink-0 items-center px-3"
             >
-              <Image src={logo} alt="Aimo" className="h-5 w-auto tablet:h-[27px]" priority />
+              <Image src={logo} alt="Aimo" className="h-5 w-auto tablet:h-[27.149px]" priority />
             </a>
 
-            <div className="hidden items-center gap-9 text-base leading-[1.5] text-black-30 tablet:flex">
+            {/* tracking-normal: Figma sets the links at 0, not the site-wide -1%
+             * body inherits (Features 66px wide in 304:121, not 64). */}
+            <div className="hidden items-center gap-9 text-base leading-[1.5] tracking-normal text-black-30 tablet:flex">
               {links.map((link) => (
                 <a
                   key={link.hash}
@@ -100,7 +110,7 @@ export default function Nav() {
                     key={link.hash}
                     href={sectionHref(link.hash)}
                     onClick={() => setOpen(false)}
-                    className="text-base leading-[1.5] text-black-30 transition-opacity hover:opacity-60"
+                    className="text-base leading-[1.5] tracking-normal text-black-30 transition-opacity hover:opacity-60"
                   >
                     {link.label}
                   </a>
