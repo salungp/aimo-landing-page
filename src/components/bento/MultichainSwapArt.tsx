@@ -19,7 +19,7 @@ function Leg({
 }) {
   return (
     <div
-      className="absolute left-1/2 -translate-x-1/2 overflow-hidden rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-gradient-to-b from-[rgba(255,255,255,0.12)] to-[rgba(255,255,255,0.02)] shadow-[0px_2px_6px_0px_rgba(0,0,0,0.12)] backdrop-blur-[12px]"
+      className="absolute left-1/2 -translate-x-1/2 overflow-hidden rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-gradient-to-b bg-origin-border from-[rgba(255,255,255,0.12)] to-[rgba(255,255,255,0.02)] shadow-[0px_2px_6px_0px_rgba(0,0,0,0.12)] backdrop-blur-[12px]"
       style={{ top, width: 220, height: 48 }}
     >
       <span
@@ -66,11 +66,17 @@ export default function MultichainSwapArt() {
         side="From"
       />
 
-      {/* The route: a green rail and three hops. */}
+      {/* The route: a green rail and three hops. The middle hop is ringed —
+       * the ring is painted first and its dot on top, as Figma stacks them. */}
       <span
         aria-hidden
         className="absolute block w-px bg-primary"
-        style={{ left: 50, top: 56, height: 68, opacity: 0.45 }}
+        style={{ left: 50, top: 56, height: 68 }}
+      />
+      <span
+        aria-hidden
+        className="absolute block rounded-full border border-primary bg-[#18201B]"
+        style={{ left: 45, top: 85, width: 10, height: 10 }}
       />
       {[66, 87, 108].map((top) => (
         <span
@@ -80,11 +86,6 @@ export default function MultichainSwapArt() {
           style={{ left: 47, top }}
         />
       ))}
-      <span
-        aria-hidden
-        className="absolute block rounded-full border border-primary bg-[#18201B]"
-        style={{ left: 45, top: 85, width: 10, height: 10 }}
-      />
 
       <div
         className="absolute flex h-[22px] items-center justify-center gap-[6px] rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] px-[6px] shadow-[0px_2px_6px_0px_rgba(0,0,0,0.12)]"

@@ -167,6 +167,7 @@ export default function BentoGrid() {
             index={8}
             label="Spot"
             title="Buy it. Hold it. It's yours."
+            variant="centered"
             height={186}
             artTop={74}
             artWidth={325}

@@ -47,7 +47,7 @@ export default function GaslessArt() {
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div
-        className="absolute left-1/2 -translate-x-1/2 overflow-hidden rounded-[16px] border-2 border-[rgba(255,255,255,0.06)] bg-gradient-to-b from-[rgba(255,255,255,0.12)] to-[rgba(255,255,255,0.02)]"
+        className="absolute left-1/2 -translate-x-1/2 overflow-hidden rounded-[16px] border-2 border-[rgba(255,255,255,0.06)] bg-gradient-to-b bg-origin-border from-[rgba(255,255,255,0.12)] to-[rgba(255,255,255,0.02)]"
         style={{ top: 0, width: 204, height: 139 }}
       >
         <Row top={14} label="Trade" value="$250.00" className="text-white" />

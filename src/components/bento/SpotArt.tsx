@@ -4,7 +4,7 @@ import { useCardSeen } from "./BentoCard";
 
 const SIZE = 88;
 const CENTRE = SIZE / 2;
-const STROKE = 11;
+const STROKE = 8.8;
 /** The ring's centreline, and the two edges the segments are drawn between. */
 const RADIUS = (SIZE - STROKE) / 2;
 const OUTER = RADIUS + STROKE / 2;
@@ -13,7 +13,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 /** Visible gap between segments, measured on the centreline, in px. */
 const GAP = 2;
 /** Corner radius on the four ends of each segment. */
-const CORNER = 1;
+const CORNER = 3;
 
 /* Clockwise from twelve o'clock, as the Figma donut reads. The percentages
  * are the design's own; they are normalised onto the ring so the four arcs
@@ -32,7 +32,7 @@ const TOTAL_PCT = SLICES.reduce((sum, slice) => sum + slice.pct, 0);
  *
  * A stroke can only end flat or fully round, and "round" is half the stroke —
  * 5.5px here, which is the whole end of the segment. Drawing the band as a
- * path is the only way to ask for a corner of 1px. It also makes the gap
+ * path is the only way to ask for a corner of 3px (Figma 308:384). It also makes the gap
  * honest: the segments now end on true radial edges, so GAP is the distance
  * between them on the centreline rather than a dash length that both round
  * caps then eat into. */
@@ -111,8 +111,17 @@ export default function SpotArt() {
                   }}
                 />
               </mask>
+              {/* Figma's inner shadow on each segment: a 0.8px white lip along
+               * the top edge at 30%. */}
+              <filter id="bento-donut-lip" x="0" y="0" width="100%" height="100%">
+                <feOffset in="SourceAlpha" dy="0.8" />
+                <feGaussianBlur stdDeviation="0.4" />
+                <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" />
+                <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.3 0" />
+                <feComposite in2="SourceGraphic" operator="over" />
+              </filter>
             </defs>
-            <g mask="url(#bento-donut-wipe)">
+            <g mask="url(#bento-donut-wipe)" filter="url(#bento-donut-lip)">
               {ARCS.map((slice) => (
                 <path key={slice.key} d={slice.d} fill={slice.color} />
               ))}

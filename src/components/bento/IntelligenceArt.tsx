@@ -59,7 +59,7 @@ export default function IntelligenceArt() {
       {/* The phone. Taller than the illustration on purpose — Figma lets the
        * card's own clip cut it off below the ask field. */}
       <div
-        className="absolute overflow-hidden rounded-[32px] border-2 border-[rgba(255,255,255,0.06)] bg-gradient-to-b from-[rgba(255,255,255,0.12)] to-[rgba(255,255,255,0.02)] backdrop-blur-[12px]"
+        className="absolute overflow-hidden rounded-[32px] border-2 border-[rgba(255,255,255,0.06)] bg-gradient-to-b bg-origin-border from-[rgba(255,255,255,0.12)] to-[rgba(255,255,255,0.02)] backdrop-blur-[12px]"
         style={{ left: 115, top: 11, width: 204, height: 316 }}
       >
         <p

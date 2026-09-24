@@ -49,8 +49,11 @@ export type BentoCardProps = {
    * is what a card re-placed at a width the design never drew needs.
    */
   artWidth?: number;
-  /** Intelligence is the one card whose header is centred and set at 20px. */
-  variant?: "default" | "feature";
+  /**
+   * `feature` (Intelligence) centres the header and sets it at 20px;
+   * `centered` (Spot) centres it at the default size.
+   */
+  variant?: "default" | "feature" | "centered";
   /**
    * The dot field, on the four cards the design gives one. `"intelligence"`
    * swaps in that card's own dot field (see `.bento-texture-intelligence`).
@@ -147,7 +150,7 @@ export default function BentoCard({
         <div
           className={clsx(
             "absolute top-4 right-4 left-4 z-[1] flex flex-col gap-1",
-            feature && "text-center"
+            variant !== "default" && "text-center"
           )}
         >
           <p className="bg-gradient-to-b from-[#a7f932] to-[#8fee07] bg-clip-text font-mono text-xs leading-[1.5] font-medium tracking-[0.48px] text-transparent uppercase">

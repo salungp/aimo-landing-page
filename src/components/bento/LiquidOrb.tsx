@@ -61,6 +61,18 @@ const SETTLE_MS = 650;
 const FRAME_MS = 1000 / 30;
 const MAX_DPR = 1.5;
 
+/* The shader and the still both draw the sphere at ~71% of their square, on
+ * black. Figma crops that frame to 140.26% inside the circle (Figma 308:258),
+ * so the sphere fills it edge to edge and no dark rim shows. The canvas is
+ * rendered at the cropped size so the crop costs no sharpness. */
+const CROP = 1.4026;
+const CROP_STYLE: CSSProperties = {
+  left: `${-((CROP - 1) / 2) * 100}%`,
+  top: `${-((CROP - 1) / 2) * 100}%`,
+  width: `${CROP * 100}%`,
+  height: `${CROP * 100}%`,
+};
+
 export type OrbState = "idle" | "thinking";
 
 function srgbToLinear(value: number) {
@@ -282,7 +294,7 @@ export default function LiquidOrb({
         motionPhase += delta * Math.max(values[3], 0);
 
         const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-        const px = Math.max(1, Math.round(size * dpr));
+        const px = Math.max(1, Math.round(size * CROP * dpr));
         if (canvas!.width !== px || canvas!.height !== px) {
           canvas!.width = px;
           canvas!.height = px;
@@ -356,33 +368,43 @@ export default function LiquidOrb({
         }}
       />
       {/* The still frame, in the same two layers, for every browser that has
-       * no WebGPU — and for the moment before the first rendered frame. */}
+       * no WebGPU — and for the moment before the first rendered frame. The
+       * blur is on the cropped circle, not the raw image, so the halo is the
+       * sphere's own green rather than its black surround. */}
       <div
         ref={stillRef}
         aria-hidden
         className="absolute inset-0 transition-opacity duration-500"
       >
-        <img
-          src="/images/bento/orb-aurora.webp"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full rounded-full"
-          style={{ filter: "blur(16px)" }}
-        />
-        <img
-          src="/images/bento/orb-aurora.webp"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full rounded-full"
+        <div className="absolute inset-0 overflow-hidden rounded-full" style={{ filter: "blur(16px)" }}>
+          <img
+            src="/images/bento/orb-aurora.webp"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute max-w-none"
+            style={CROP_STYLE}
+          />
+        </div>
+        <div className="absolute inset-0 overflow-hidden rounded-full">
+          <img
+            src="/images/bento/orb-aurora.webp"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute max-w-none"
+            style={CROP_STYLE}
+          />
+        </div>
+      </div>
+      <div className="absolute inset-0 overflow-hidden rounded-full">
+        <canvas
+          ref={canvasRef}
+          aria-hidden
+          className="absolute opacity-0 transition-opacity duration-500"
+          style={CROP_STYLE}
         />
       </div>
-      <canvas
-        ref={canvasRef}
-        aria-hidden
-        className="absolute inset-0 h-full w-full rounded-full opacity-0 transition-opacity duration-500"
-      />
     </div>
   );
 }

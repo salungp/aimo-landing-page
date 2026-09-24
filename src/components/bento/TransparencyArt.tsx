@@ -37,7 +37,7 @@ export default function TransparencyArt() {
             />
             <span
               aria-hidden
-              className="relative shrink-0 rounded-full bg-primary"
+              className="relative shrink-0 rounded-full bg-primary/20"
               style={{ width: 3.435, height: 3.435 }}
             />
             <span

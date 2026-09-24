@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useCardActive } from "./BentoCard";
 
-/** The chart's own width at `tablet` and up — Figma's desktop design width,
- * and the card's own slot there, so the box never needs to grow to fit it. */
-const DESKTOP_WIDTH = 229;
+/** The chart's own width at `tablet` and up. Figma 308:283 masks the chart to
+ * 229px and centres the head dots at 225.8, clear of the edge; the chart ends
+ * where the dots are, so that is the width. */
+const DESKTOP_WIDTH = 226;
 const HEIGHT = 151;
 /** Samples drawn across the chart, plus one waiting off the right edge. */
-const POINTS = 33;
+const POINTS = 47;
 const TICK_MS = 1200;
 
 /* One step per gap between samples, with the last sample landing exactly one
@@ -28,14 +29,18 @@ function stepFor(width: number) {
 const DOT_R = 6.984 / 2;
 
 /* The two traded outcomes share one linear axis, fixed by the design's own
- * dots: 75% sits at y 25.9 and 24% at y 93.7. The third line is the residual
- * "everything else" at 0,8%, which the design pins to the floor of the frame
- * rather than to that axis — so it gets its own compressed mapping instead of
- * being drawn ten times further down than the frame is tall. */
-const yesY = (p: number) => 125.6 - 1.329 * p;
-const restY = (p: number) => 151.3 - 3 * p;
+ * dots: 75% sits at y 25.9 and 24% at y 93.7 of the illustration, which is
+ * 11.9 and 79.7 inside the chart box (it starts 14px down). The third line is
+ * the residual "everything else" at 0,8%, which the design pins to the floor
+ * of the frame rather than to that axis — so it gets its own compressed
+ * mapping instead of being drawn ten times further down than the frame is
+ * tall. */
+const yesY = (p: number) => 111.6 - 1.329 * p;
+const restY = (p: number) => 139.7 - 3 * p;
 
-const YES_MIN = 62;
+/* Figma 308:287's Yes line swings across ~34px of the frame — roughly 58% to
+ * 84% — so the walk is allowed that much room. */
+const YES_MIN = 56;
 const YES_MAX = 86;
 const TOTAL = 99.2;
 
@@ -61,13 +66,13 @@ function jitter(i: number, salt: number) {
  * both series are built: `mid` walks, every sample is `mid` plus a tick of
  * noise. Drawing the walk alone would give the smooth curve of a sparkline,
  * which is not what the design shows. */
-const NOISE = 2;
+const NOISE = 3.2;
 
 function seedSeries(base: number, salt: number) {
   let mid = base;
   return Array.from({ length: POINTS }, (_, i) => {
-    mid += jitter(i, salt + 3) * 2.4;
-    mid = Math.max(YES_MIN + 2, Math.min(YES_MAX - 2, mid));
+    mid += jitter(i, salt + 3) * 3.6;
+    mid = Math.max(YES_MIN + 4, Math.min(YES_MAX - 4, mid));
     return mid + jitter(i, salt) * NOISE;
   });
 }
@@ -136,9 +141,8 @@ export default function PredictionArt() {
         setWidth(DESKTOP_WIDTH);
         return;
       }
-      // Room for the head dot and its reading, which sit past the chart's
-      // own right edge.
-      const available = el.getBoundingClientRect().width - 36;
+      // Room for the head dot, which is centred on the chart's right edge.
+      const available = el.getBoundingClientRect().width - 8;
       setWidth(Math.max(180, Math.round(available)));
     };
     measure();
@@ -161,8 +165,8 @@ export default function PredictionArt() {
       setSeries((previous) => {
         // A soft pull back towards the middle of the range keeps the walk from
         // parking against an edge for minutes at a time.
-        const drift = (Math.random() - 0.5) * 3.4 + (74 - previous.mid) * 0.05;
-        const mid = Math.max(YES_MIN + 2, Math.min(YES_MAX - 2, previous.mid + drift));
+        const drift = (Math.random() - 0.5) * 5 + (72 - previous.mid) * 0.06;
+        const mid = Math.max(YES_MIN + 4, Math.min(YES_MAX - 4, previous.mid + drift));
         const next = mid + (Math.random() - 0.5) * 2 * NOISE;
         const rest = Math.max(
           0.3,
@@ -259,49 +263,27 @@ export default function PredictionArt() {
         </div>
       </div>
 
-      {/* Heads: the dot and its reading, held at the right edge. They ride the
-       * same tick as the line, so a dot is never off its own curve. */}
+      {/* Heads: the dot, held at the right edge. It rides the same tick as
+       * the line, so a dot is never off its own curve. The design carries no
+       * reading beside it — the pills below are the reading. */}
       {(
         [
-          { value: headYes, y: yesY(headYes), color: "#8B5CF6", text: `${Math.round(headYes)}%` },
-          { value: headNo, y: yesY(headNo), color: "#A7F932", text: `${Math.round(headNo)}%` },
-          {
-            value: headRest,
-            y: restY(headRest),
-            color: "#F7931A",
-            text: `${headRest.toFixed(1).replace(".", ",")}%`,
-          },
+          { y: yesY(headYes), color: "#8B5CF6" },
+          { y: yesY(headNo), color: "#A7F932" },
+          { y: restY(headRest), color: "#F7931A" },
         ] as const
       ).map((head) => (
-        <div
+        <span
           key={head.color}
-          className="pointer-events-none absolute top-[14px] left-0"
-          style={{ width: width + 36 }}
-        >
-          <span
-            className="absolute block size-[6.984px] rounded-full"
-            style={{
-              left: width - DOT_R,
-              top: -DOT_R,
-              background: head.color,
-              transform: `translateY(${head.y}px)`,
-              ...dotTransition,
-            }}
-          />
-          <span
-            className="absolute block text-[8.381px] leading-none whitespace-nowrap text-white"
-            style={{
-              // Held the design's own distance clear of the dot, which has
-              // moved out to the edge.
-              left: width + 8,
-              top: -4.19,
-              transform: `translateY(${head.y}px)`,
-              ...dotTransition,
-            }}
-          >
-            {head.text}
-          </span>
-        </div>
+          className="pointer-events-none absolute block size-[6.984px] rounded-full"
+          style={{
+            left: width - DOT_R,
+            top: 14 - DOT_R,
+            background: head.color,
+            transform: `translateY(${head.y}px)`,
+            ...dotTransition,
+          }}
+        />
       ))}
 
       {/* The two sides, priced from the same numbers the lines are drawn from. */}
