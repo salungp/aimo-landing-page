@@ -7,6 +7,7 @@ import BentoGrid from "@/components/sections/BentoGrid";
 import OneBalance from "@/components/sections/OneBalance";
 import FAQ from "@/components/sections/FAQ";
 import Footer from "@/components/sections/Footer";
+import DeferAssets from "@/components/DeferAssets";
 
 export default function Home() {
   return (
@@ -22,6 +23,7 @@ export default function Home() {
         <FAQ />
       </main>
       <Footer />
+      <DeferAssets />
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import Container from "../Container";
 import Reveal from "../Reveal";
 import WordReveal from "../WordReveal";
@@ -116,7 +116,7 @@ function FaqCard({
         </p>
         {/* Same plus glyph as the Figma icon — rotating it 45° turns it into
          * a close (×) without swapping assets or fighting a layout shift. */}
-        <motion.svg
+        <m.svg
           className="mt-0.5 size-5 shrink-0"
           viewBox="0 0 20 20"
           fill="none"
@@ -127,7 +127,7 @@ function FaqCard({
             d="M9.375 16.6667C9.375 17.0118 9.65483 17.2917 10 17.2917C10.3452 17.2917 10.625 17.0118 10.625 16.6667V10.625H16.6667C17.0118 10.625 17.2917 10.3452 17.2917 10C17.2917 9.65483 17.0118 9.375 16.6667 9.375H10.625V3.33333C10.625 2.98816 10.3452 2.70833 10 2.70833C9.65483 2.70833 9.375 2.98816 9.375 3.33333V9.375H3.33333C2.98816 9.375 2.70833 9.65483 2.70833 10C2.70833 10.3452 2.98816 10.625 3.33333 10.625H9.375V16.6667Z"
             fill="#A7F932"
           />
-        </motion.svg>
+        </m.svg>
       </button>
 
       {/* Animating to height:"auto" (rather than a fixed px value) lets
@@ -136,7 +136,7 @@ function FaqCard({
        * a given viewport width. */}
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div
+          <m.div
             key="answer"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -147,7 +147,7 @@ function FaqCard({
             <p className="px-4 pb-4 text-sm leading-[1.5] tracking-[-0.01em] text-black-50">
               {item.answer}
             </p>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

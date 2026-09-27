@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { motion, useMotionValueEvent, useScroll, type Transition } from "framer-motion";
+import { m, useMotionValueEvent, useScroll, type Transition } from "framer-motion";
 import clsx from "clsx";
 import Container from "../Container";
 import useReducedMotionAfterMount from "../useReducedMotionAfterMount";
@@ -308,7 +308,7 @@ function WalletStage({ header, still }: { header: React.ReactNode; still: boolea
   const g = useMemo(() => computeGeometry(size.w, size.h), [size.w, size.h]);
 
   return (
-    <section id="wallets">
+    <section id="wallets" data-defer>
       {/* Short track: enough pin to watch the deck open, not enough to scrub it. */}
       <div ref={trackRef} className={clsx("relative", still ? "h-svh min-h-[640px]" : "h-[185vh]")}>
         <div className="sticky top-0 flex h-svh min-h-[640px] flex-col overflow-hidden pt-[96px] tablet:pt-[112px] desktop:pt-[142px]">
@@ -355,7 +355,7 @@ function DeckCard({
   // pocket there is nothing to promote a layer for.
   const animating = phase !== "pocket" && !still;
   return (
-    <motion.div
+    <m.div
       className={clsx("absolute top-0 left-1/2", animating && "will-change-transform")}
       style={{
         width: g.cardW,
@@ -375,7 +375,7 @@ function DeckCard({
       <TiltCard radius={34 * (g.cardW / 304)} enabled={phase === "fan"}>
         <CardFace card={card} width={g.cardW} />
       </TiltCard>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -465,10 +465,8 @@ function MainWalletBackground() {
         aria-hidden
         viewBox="0 0 304 192"
         preserveAspectRatio="none"
-        className="pointer-events-none absolute inset-0 -z-10 size-full"
+        className="wallet-main-dots pointer-events-none absolute inset-0 -z-10 size-full"
         style={{
-          maskImage: "url(/images/wallet/main-card-dots.webp)",
-          WebkitMaskImage: "url(/images/wallet/main-card-dots.webp)",
           maskSize: "100% 100%",
           WebkitMaskSize: "100% 100%",
           maskRepeat: "no-repeat",
@@ -605,9 +603,8 @@ function LeatherPocket({ g }: { g: Geometry }) {
         style={{ top: "-1.13%", right: "-1.15%", bottom: "-3.39%", left: "-1.15%", width: "102.3%", height: "104.52%" }}
       />
       <div
-        className="absolute inset-0 mix-blend-multiply"
+        className="wallet-leather absolute inset-0 mix-blend-multiply"
         style={{
-          backgroundImage: "url(/images/wallet/leather-texture.jpg)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           maskImage: "url(/images/wallet/pocket-mask.svg)",

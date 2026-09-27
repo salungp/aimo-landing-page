@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
 type TitleRevealProps = {
@@ -19,7 +19,7 @@ type TitleRevealProps = {
  */
 export default function TitleReveal({ children, className, delay = 0, as = "div" }: TitleRevealProps) {
   const reduceMotion = useReducedMotion();
-  const MotionTag = as === "span" ? motion.span : motion.div;
+  const MotionTag = as === "span" ? m.span : m.div;
 
   return (
     <MotionTag

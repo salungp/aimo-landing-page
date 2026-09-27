@@ -832,3 +832,28 @@ html.lenis body {
     grid-row: var(--d-row);
   }
 }
+
+/* Wallet images that used to be inline styles, moved here so the deferral
+ * rules below can reach them (an inline style outranks any selector). */
+.wallet-leather {
+  background-image: url("/images/wallet/leather-texture.jpg");
+}
+.wallet-main-dots {
+  -webkit-mask-image: url("/images/wallet/main-card-dots.webp");
+  mask-image: url("/images/wallet/main-card-dots.webp");
+}
+
+/* Deferred section images — see DeferAssets.tsx. Until a `data-defer` section
+ * is within a screen of the viewport, its CSS images are not named at all, so
+ * the browser has nothing to fetch. Masked layers are hidden rather than left
+ * unmasked meanwhile: with no mask they would paint as a solid block. Nothing
+ * here is ever visible — a screen of distance is the margin — so the look of
+ * every section is unchanged. */
+[data-defer]:not([data-near]) :is(.mt-texture, .bento-texture-intelligence, .wallet-leather) {
+  background-image: none;
+}
+[data-defer]:not([data-near]) :is(.bento-texture, .ob-backdrop, .wallet-main-dots) {
+  visibility: hidden;
+  -webkit-mask-image: none;
+  mask-image: none;
+}

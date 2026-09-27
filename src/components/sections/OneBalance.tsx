@@ -19,7 +19,7 @@ import BalanceHub from "../one-balance/BalanceHub";
  */
 export default function OneBalance() {
   return (
-    <section className="relative isolate overflow-hidden py-20 tablet:py-28 desktop:py-[205px]">
+    <section data-defer className="relative isolate overflow-hidden py-20 tablet:py-28 desktop:py-[205px]">
       {/* The picture, at full strength; the blurred rounded-rect mask that
        * shapes and dims it is .ob-backdrop in globals.css, exported straight
        * from Figma. 112% wide because Figma draws the image 1612px across a

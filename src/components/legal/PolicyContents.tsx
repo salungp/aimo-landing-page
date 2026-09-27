@@ -7,7 +7,7 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import clsx from "clsx";
 import { getLenis } from "../SmoothScroll";
 
@@ -230,7 +230,7 @@ export default function PolicyContents({ entries }: { entries: ContentsEntry[] }
 
         <AnimatePresence>
           {open && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -242,7 +242,7 @@ export default function PolicyContents({ entries }: { entries: ContentsEntry[] }
               )}
             >
               <List entries={entries} activeId={activeId} onSelect={goTo} />
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </div>
@@ -286,7 +286,7 @@ function List({
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <motion.svg
+    <m.svg
       className="size-4 shrink-0"
       viewBox="0 0 16 16"
       fill="none"
@@ -300,6 +300,6 @@ function ChevronIcon({ open }: { open: boolean }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </motion.svg>
+    </m.svg>
   );
 }

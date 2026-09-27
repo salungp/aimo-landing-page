@@ -51,7 +51,7 @@ function place(
  */
 export default function BentoGrid() {
   return (
-    <section id="features" className="overflow-x-clip py-[60px] tablet:py-28 desktop:py-[120px]">
+    <section id="features" data-defer className="overflow-x-clip py-[60px] tablet:py-28 desktop:py-[120px]">
       <Container>
         <div className="bento-grid">
           <BentoCard

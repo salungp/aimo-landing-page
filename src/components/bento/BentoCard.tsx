@@ -8,7 +8,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import clsx from "clsx";
 
 /** Defaults to on-screen, so an illustration dropped outside a card runs. */
@@ -126,7 +126,7 @@ export default function BentoCard({
     // would mean Framer's inline value silently winning over the hover rule
     // for the life of the page. The outer element travels in, the inner one
     // is the card and owns the hover.
-    <motion.div
+    <m.div
       ref={ref}
       style={style}
       initial={{ opacity: 0, y: 24 }}
@@ -185,7 +185,7 @@ export default function BentoCard({
           </div>
         </CardStateContext.Provider>
       </article>
-    </motion.div>
+    </m.div>
   );
 }
 

@@ -10,7 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { m, useReducedMotion, type Variants } from "framer-motion";
 
 type WordRevealProps = {
   children: ReactNode;
@@ -134,7 +134,7 @@ const isWhitespace = (s: string) => /^\s+$/.test(s);
 const isPaintClass = (c: string) => /^(bg-|from-|to-|via-)/.test(c) || c === "text-transparent";
 
 /**
- * Recursively split every string leaf into per-word `motion.span`s, leaving
+ * Recursively split every string leaf into per-word `m.span`s, leaving
  * element wrapping untouched — a `<span>` doing a gradient text-clip around
  * one highlighted word keeps that span, its words just become independently
  * animated children of it. This is what lets `WordReveal` drop straight into
@@ -160,13 +160,13 @@ function splitWords(
       if (part === "") return null;
       if (isWhitespace(part)) return part;
       return (
-        <motion.span
+        <m.span
           key={`${path}-${i}`}
           variants={wordVariants(reduceMotion)}
           className={`wr-word inline-block ${inFlight ? "will-change-[filter,opacity,transform]" : ""} ${paint}`}
         >
           {part}
-        </motion.span>
+        </m.span>
       );
     });
   }
@@ -226,7 +226,7 @@ function splitWords(
  */
 export default function WordReveal({ children, className, delay = 0, as = "div" }: WordRevealProps) {
   const reduceMotion = useReducedMotion();
-  const MotionTag = as === "span" ? motion.span : motion.div;
+  const MotionTag = as === "span" ? m.span : m.div;
   // "idle" until this heading scrolls in, "done" once every word has settled;
   // only in between do the words ask for a layer. See the note above.
   const [inFlight, setInFlight] = useState(false);

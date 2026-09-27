@@ -42,7 +42,7 @@ export default function MarketsTogether() {
   return (
     // overflow-x-clip, not hidden: `hidden` on an ancestor silently kills
     // position: sticky below.
-    <section className="overflow-x-clip">
+    <section data-defer className="overflow-x-clip">
       {/* The track is half a screen taller than the pin, and that difference is
        * exactly how long the card holds before it scrolls away. */}
       <div className="relative desktop:h-[150svh]">

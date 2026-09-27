@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { m, type Variants } from "framer-motion";
 import type { CSSProperties, ReactNode } from "react";
 
 type RevealProps = {
@@ -58,7 +58,7 @@ export default function Reveal({
     },
   };
 
-  const MotionTag = as === "span" ? motion.span : motion.div;
+  const MotionTag = as === "span" ? m.span : m.div;
 
   return (
     <MotionTag

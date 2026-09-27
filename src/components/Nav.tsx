@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import Container from "./Container";
 import logo from "../../public/images/shared/logo-primary.svg";
 
@@ -98,7 +98,7 @@ export default function Nav() {
 
           <AnimatePresence>
             {open && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
@@ -122,7 +122,7 @@ export default function Nav() {
                 >
                   Start trading
                 </a>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
