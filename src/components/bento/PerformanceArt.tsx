@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCardActive } from "./BentoCard";
-import RollingNumber from "./RollingNumber";
+import NumberPopIn from "./NumberPopIn";
 
 type Token = {
   symbol: string;
@@ -118,12 +118,12 @@ function TokenItem({ token, change, direction }: { token: Token; change: number;
         <div className="flex w-[84px] shrink-0 flex-col items-end justify-center gap-1">
           <p className="flex items-baseline leading-[normal] tabular-nums whitespace-nowrap text-white">
             <span className="text-sm leading-[normal] font-semibold">$</span>
-            <RollingNumber
+            <NumberPopIn
               value={whole}
               direction={direction}
               className="text-sm leading-[normal] font-semibold"
             />
-            <RollingNumber
+            <NumberPopIn
               value={`.${cents}`}
               direction={direction}
               className="text-[10px] leading-[normal] font-semibold text-black-50"
@@ -141,7 +141,7 @@ function TokenItem({ token, change, direction }: { token: Token; change: number;
               decoding="async"
               className="size-[10px] shrink-0"
             />
-            <RollingNumber
+            <NumberPopIn
               value={`${Math.abs(change).toFixed(2)}%`}
               direction={direction}
               className="text-xs leading-[normal] font-medium tabular-nums whitespace-nowrap"
@@ -163,9 +163,10 @@ function TokenItem({ token, change, direction }: { token: Token; change: number;
  * both copies of a token read the same state, so a token never shows two
  * different prices as it wraps.
  *
- * Each quote rolls rather than blinks: see RollingNumber. The direction it
- * rolls is the direction the price moved, and the arrow and its colour come
- * from the same number, so nothing on the row can disagree with itself.
+ * Each quote pops its changed digits in rather than blinking: see
+ * NumberPopIn. They rise into place when the price moved up and drop in when
+ * it moved down, and the arrow and its colour come from the same number, so
+ * nothing on the row can disagree with itself.
  *
  * The prices random-walk from their starting value and the percentage is
  * derived from that walk, so the arrow, its colour and the number can never
@@ -189,13 +190,13 @@ export default function PerformanceArt() {
           // zero so the card shows a red tick from time to time.
           const change = Math.max(-4.2, Math.min(5.6, quote.change + step));
           // The direction the price moved, which is the direction the digits
-          // roll. Taken from the clamped value, not the step, so a quote
-          // pinned at the top of its range doesn't keep rolling upward.
+          // pop in from. Taken from the clamped value, not the step, so a
+          // quote pinned at the top of its range doesn't keep popping upward.
           return { change, direction: change >= quote.change ? 1 : -1 };
         })
       );
-      // 2.2s, not the 1.4 this started on: each tick starts ~28 short roll
-      // animations across the strip's two copies, and a quote that re-prices
+      // 2.2s, not the 1.4 this started on: each tick pops digits in on every
+      // quote across the strip's two copies, and a quote that re-prices
       // every second and a half reads as a stopwatch rather than a market.
     }, 2200);
 

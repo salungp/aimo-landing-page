@@ -197,6 +197,58 @@ body {
   }
 }
 
+/* Number pop-in (transitions.dev "Number pop-in", ported by hand) on the
+ * bento's live numbers — see bento/NumberPopIn.tsx. Two changes from the
+ * original, both for a strip that re-prices every couple of seconds:
+ *  - No permanent `will-change` on every digit; the running animation promotes
+ *    a digit for as long as it needs to and no longer.
+ *  - `backwards`, not `both`: `both` holds the last frame's `filter: blur(0)`
+ *    forever, which keeps a filter layer alive on every digit that ever
+ *    popped. `backwards` still holds the first frame through the stagger
+ *    delay, and drops everything once the pop lands.
+ * Distance is in em because these numbers are 10–14px, not the demo's size. */
+.t-digit-group {
+  --digit-dur: 500ms;
+  --digit-distance: 0.55em;
+  --digit-stagger: 45ms;
+  --digit-blur: 2px;
+  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+@keyframes t-digit-pop-in {
+  0% {
+    transform: translate(
+      calc(var(--digit-distance) * var(--digit-dir-x)),
+      calc(var(--digit-distance) * var(--digit-dir-y))
+    );
+    opacity: 0;
+    filter: blur(var(--digit-blur));
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.t-digit {
+  display: inline-block;
+}
+.t-digit.is-popping {
+  animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) backwards;
+  animation-delay: calc(var(--digit-stagger) * var(--digit-i, 0));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-digit-group .t-digit {
+    animation: none !important;
+  }
+}
+
 /* OneBalance backdrop, built the way the design builds it: the picture at full
  * strength with Figma's own mask over it — a 1254x624 rounded rectangle blurred
  * by 122 and taken down to 10%, exported straight from the file (244:1200).
@@ -841,6 +893,27 @@ html.lenis body {
 .wallet-main-dots {
   -webkit-mask-image: url("/images/wallet/main-card-dots.webp");
   mask-image: url("/images/wallet/main-card-dots.webp");
+}
+
+/* Once the fan is out, each card drifts on its own slow bob so the hand reads
+ * as held rather than printed. A CSS animation on a plain transform runs on
+ * the compositor; Framer's keyframes would tick on the main thread. Period and
+ * delay come from the card so the three never move in step. */
+@keyframes wallet-float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--float-amp, -6px));
+  }
+}
+.wallet-float {
+  animation: wallet-float var(--float-dur, 4.8s) ease-in-out var(--float-delay, 0s) infinite alternate both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wallet-float {
+    animation: none;
+  }
 }
 
 /* Deferred section images — see DeferAssets.tsx. Until a `data-defer` section

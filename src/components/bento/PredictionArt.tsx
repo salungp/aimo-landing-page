@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCardActive } from "./BentoCard";
+import NumberPopIn from "./NumberPopIn";
 
 /** The chart's own width at `tablet` and up. Figma 308:283 masks the chart to
  * 229px and centres the head dots at 225.8, clear of the edge; the chart ends
@@ -199,6 +200,10 @@ export default function PredictionArt() {
   const headNo = TOTAL - headYes;
   const headRest = rest[rest.length - 1];
 
+  // Which way Yes moved on the last tick; No always moves the other way. Their
+  // digits pop in from below when the side rose and from above when it fell.
+  const yesDir = headYes >= yes[yes.length - 2] ? 1 : -1;
+
   const dotTransition = { transition: `transform ${TICK_MS}ms linear` };
 
   return (
@@ -298,7 +303,7 @@ export default function PredictionArt() {
           />
           <span className="relative text-base leading-[19px] font-medium text-ink">Yes</span>
           <span className="relative text-sm leading-[normal] font-medium tabular-nums text-ink opacity-80">
-            {Math.round(headYes)}%
+            <NumberPopIn value={`${Math.round(headYes)}%`} direction={yesDir} />
           </span>
           <span
             aria-hidden
@@ -312,7 +317,7 @@ export default function PredictionArt() {
           />
           <span className="relative text-base leading-[19px] font-medium text-white">No</span>
           <span className="relative text-sm leading-[normal] font-medium tabular-nums text-white opacity-80">
-            {Math.round(headNo)}%
+            <NumberPopIn value={`${Math.round(headNo)}%`} direction={-yesDir} />
           </span>
           <span
             aria-hidden

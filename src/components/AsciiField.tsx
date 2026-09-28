@@ -66,6 +66,13 @@ const FIELD_OPTIONS = {
   // read as a denser texture rather than spaced-out marks.
   tracking: 0.85,
   lineHeight: 1.12,
+  // Same field and ripples, drawn as an ordered dither of square dots with a
+  // soft glow under it instead of characters. "glyph" restores the ASCII.
+  render: "dither",
+  pixel: 4,
+  sub: 2,
+  gain: 0.6,
+  glow: 0.35,
 };
 
 // The same ellipse the layer used to carry as a CSS mask —

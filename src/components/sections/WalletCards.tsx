@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { m, useMotionValueEvent, useScroll, type Transition } from "framer-motion";
+import { m, type Transition } from "framer-motion";
 import clsx from "clsx";
 import Container from "../Container";
 import useReducedMotionAfterMount from "../useReducedMotionAfterMount";
@@ -24,22 +24,22 @@ const cards: Card[] = [
     id: "main",
     icon: "/images/wallets/main-icon.svg",
     label: "Main Wallet",
-    title: "Your starting point.",
-    body: "Deposit, withdraw, and manage your available funds from one central wallet.",
+    title: "For spot & token trading.",
+    body: "Buy and sell tokens, from blue chips to small caps.",
   },
   {
     id: "outcome",
     icon: "/images/wallets/outcome-icon.svg",
     label: "Outcome Wallet",
     title: "For event outcomes.",
-    body: "Back the results you believe in, with funds separated from the rest of your portfolio.",
+    body: "Back the results you believe in with dedicated funds.",
   },
   {
     id: "perps",
     icon: "/images/wallets/perps-icon.svg",
     label: "Perps Wallet",
     title: "For leveraged positions.",
-    body: "Keep your perpetuals trading funds separate from the rest of your portfolio.",
+    body: "Trade perpetuals with funds kept separate from your main balance.",
   },
 ];
 
@@ -105,6 +105,25 @@ type Phase = "pocket" | "ladder" | "fan";
 /** Beat between the deck finishing its pop and fanning out, in ms. */
 const FAN_DELAY = 760;
 
+/** Once fanned, how far the spotlit card rises (x wallet width), and its scale. */
+const FOCUS_LIFT = 22 / 340;
+const FOCUS_SCALE = 1.05;
+/** The two cards not in focus darken this far — a shade laid over them, not
+ * opacity, which would let the backdrop streaks show through the cards. */
+const FOCUS_DIM = 0.4;
+/** Critically damped: the spotlight moves on its own, with no gesture behind
+ * it, so it settles without overshoot. */
+const FOCUS_SPRING: Transition = { type: "spring", bounce: 0, duration: 0.6 };
+/** The spotlight loop: first card after the fan settles, then the next every beat, in ms. */
+const SPOT_FIRST = 900;
+const SPOT_EVERY = 2600;
+/** Idle bob per card: period and start, in s. Unequal so the three never sync;
+ * the start waits out the fan's own settle. */
+const FLOAT_DUR = [3.2, 3.7, 3.4];
+const FLOAT_DELAY = [0.7, 1.0, 1.3];
+/** Bob height, x wallet width. */
+const FLOAT_AMP = 10 / 340;
+
 /** Stage height the fan needs, in wallet widths: Main's top to the wallet's bottom. */
 const FAN_HEIGHT = WALLET_RATIO - FAN_MAIN_TOP;
 
@@ -124,6 +143,8 @@ type Geometry = {
   fanDx: number;
   fanDy: number;
   fanTilt: number;
+  /** Side cards are tucked behind Main rather than fanned out. */
+  tucked: boolean;
 };
 
 function computeGeometry(w: number, h: number): Geometry {
@@ -179,6 +200,7 @@ function computeGeometry(w: number, h: number): Geometry {
     fanDx: walletW * (fanFits ? FAN_DX : TUCK_DX),
     fanDy: walletW * (fanFits ? FAN_DY : TUCK_DY),
     fanTilt: fanFits ? FAN_TILT : TUCK_TILT,
+    tucked: !fanFits,
   };
 }
 
@@ -228,7 +250,7 @@ function cardTransition(phase: Phase, i: number): Transition {
 
 export default function WalletCards() {
   // Not Framer Motion's `useReducedMotion`: under reduced motion the section
-  // drops its pin and renders the fan still, and choosing between those on a
+  // renders the fan still, and choosing between those on a
   // value the server cannot know made every reduced-motion visit hydrate
   // against the wrong tree. See the hook.
   const reduceMotion = useReducedMotionAfterMount();
@@ -261,16 +283,41 @@ function WalletStage({ header, still }: { header: React.ReactNode; still: boolea
   const stageRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [played, setPlayed] = useState<Phase>("pocket");
-  // Reduced motion skips straight to the finished fan and never pins.
+  // The spotlight: once fanned, one card at a time rises to the front, looping
+  // Main -> Outcome -> Perps. Hovering a card takes the spotlight over and
+  // holds the loop; leaving hands it back from that card.
+  const [spot, setSpot] = useState<number | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
+  // Reduced motion skips straight to the finished fan.
   const phase: Phase = still ? "fan" : played;
+  const looping = phase === "fan" && !still && hovered === null;
+  const focused = phase === "fan" ? (hovered ?? spot) : null;
 
-  const { scrollYProgress } = useScroll({ target: trackRef, offset: ["start start", "end end"] });
+  // One timeout per beat, keyed on `spot`: a tap that moves the spotlight
+  // restarts the beat, so the loop never jumps straight past a chosen card.
+  useEffect(() => {
+    if (!looping) return;
+    const id = window.setTimeout(
+      () => setSpot((prev) => (prev === null ? 0 : (prev + 1) % N)),
+      spot === null ? SPOT_FIRST : SPOT_EVERY,
+    );
+    return () => window.clearTimeout(id);
+  }, [looping, spot]);
 
-  // One trigger. Progress leaves 0 the moment the section pins, and that single
-  // scroll plays the whole thing — no scrubbing, so nothing is left half-open.
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    if (v > 0.004) setPlayed((prev) => (prev === "pocket" ? "ladder" : prev));
-  });
+  // One trigger: once most of the stage is on screen the whole thing plays —
+  // no scrubbing, so nothing is left half-open.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setPlayed((prev) => (prev === "pocket" ? "ladder" : prev));
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
 
   // Tuck back in so the deck is fresh on the way back up. The default
   // threshold means this only fires once the whole track has left the
@@ -279,7 +326,11 @@ function WalletStage({ header, still }: { header: React.ReactNode; still: boolea
     const track = trackRef.current;
     if (!track) return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) setPlayed("pocket");
+      if (!entry.isIntersecting) {
+        setPlayed("pocket");
+        setSpot(null);
+        setHovered(null);
+      }
     });
     observer.observe(track);
     return () => observer.disconnect();
@@ -309,9 +360,8 @@ function WalletStage({ header, still }: { header: React.ReactNode; still: boolea
 
   return (
     <section id="wallets" data-defer>
-      {/* Short track: enough pin to watch the deck open, not enough to scrub it. */}
-      <div ref={trackRef} className={clsx("relative", still ? "h-svh min-h-[640px]" : "h-[185vh]")}>
-        <div className="sticky top-0 flex h-svh min-h-[640px] flex-col overflow-hidden pt-[96px] tablet:pt-[112px] desktop:pt-[142px]">
+      <div ref={trackRef} className="relative h-svh min-h-[640px]">
+        <div className="relative isolate flex h-svh min-h-[640px] flex-col overflow-hidden pt-[96px] tablet:pt-[112px] desktop:pt-[142px]">
           <Backdrop />
           <Container>{header}</Container>
           <div ref={stageRef} className="relative mt-6 min-h-0 flex-1 tablet:mt-8">
@@ -323,7 +373,21 @@ function WalletStage({ header, still }: { header: React.ReactNode; still: boolea
                  * leather. */}
                 <div className="absolute inset-0 isolate" style={{ zIndex: 10 }}>
                   {cards.map((card, i) => (
-                    <DeckCard key={card.id} card={card} index={i} phase={phase} still={still} g={g} />
+                    <DeckCard
+                      key={card.id}
+                      card={card}
+                      index={i}
+                      phase={phase}
+                      still={still}
+                      g={g}
+                      focused={focused}
+                      onHover={(on) => {
+                        if (on) return setHovered(i);
+                        setHovered(null);
+                        setSpot(i);
+                      }}
+                      onTap={() => setSpot((prev) => (g.tucked ? ((prev ?? 0) + 1) % N : i))}
+                    />
                   ))}
                 </div>
                 <LeatherPocket g={g} />
@@ -342,6 +406,9 @@ function DeckCard({
   phase,
   still,
   g,
+  focused,
+  onHover,
+  onTap,
 }: {
   card: Card;
   index: number;
@@ -349,8 +416,15 @@ function DeckCard({
   /** Reduced motion: the fan is placed, never played. */
   still: boolean;
   g: Geometry;
+  /** Which card is spotlit, if any. Always null until the fan is out. */
+  focused: number | null;
+  onHover: (on: boolean) => void;
+  onTap: () => void;
 }) {
   const f = cardFrame(phase, g, index);
+  const fanned = phase === "fan";
+  const isFocused = focused === index;
+  const dimmed = focused !== null && !isFocused;
   // `will-change` only while the card's own spring can run; at rest in the
   // pocket there is nothing to promote a layer for.
   const animating = phase !== "pocket" && !still;
@@ -363,18 +437,62 @@ function DeckCard({
         marginLeft: -g.cardW / 2,
         // Lower on screen means further forward, in the pocket and in the
         // ladder alike; in the fan Main stays in front of the two it opens
-        // out from. The leather sits above every card.
-        zIndex: N - index,
+        // out from, unless another is lifted. The leather sits above every card.
+        zIndex: isFocused ? N + 1 : N - index,
       }}
       initial={false}
       animate={{ x: f.x, y: f.y, scale: f.scale, rotate: f.rotate, opacity: f.opacity }}
       transition={still ? { duration: 0 } : cardTransition(phase, index)}
     >
-      {/* Tilts only once the fan is out; in the pocket and mid-pop the card
-       * is not somewhere a reader is meant to pick it up. */}
-      <TiltCard radius={34 * (g.cardW / 304)} enabled={phase === "fan"}>
-        <CardFace card={card} width={g.cardW} />
-      </TiltCard>
+      {/* Spotlight: the focused card rises to the front and the other two fall
+       * back. Mouse hover takes it over; touch has no hover, so a tap moves it
+       * to that card. Tucked (phones, tablets), only the front card shows, so
+       * a tap anywhere on the deck deals the next one instead. A scroll that
+       * starts on a card cancels the pointer rather than ending it, so
+       * swiping past never changes anything. */}
+      <m.div
+        className={clsx("size-full", fanned && "cursor-pointer")}
+        initial={false}
+        animate={{
+          y: isFocused ? -g.walletW * FOCUS_LIFT : 0,
+          scale: isFocused ? FOCUS_SCALE : 1,
+        }}
+        transition={still ? { duration: 0 } : FOCUS_SPRING}
+        onPointerEnter={(e) => {
+          if (fanned && !g.tucked && e.pointerType === "mouse") onHover(true);
+        }}
+        onPointerLeave={(e) => {
+          if (fanned && !g.tucked && e.pointerType === "mouse") onHover(false);
+        }}
+        onPointerUp={(e) => {
+          if (fanned && (g.tucked || e.pointerType !== "mouse")) onTap();
+        }}
+      >
+        <div
+          className={clsx("relative size-full", fanned && !still && "wallet-float")}
+          style={
+            {
+              "--float-dur": `${FLOAT_DUR[index]}s`,
+              "--float-delay": `${FLOAT_DELAY[index]}s`,
+              "--float-amp": `${-g.walletW * FLOAT_AMP}px`,
+            } as React.CSSProperties
+          }
+        >
+          {/* Tilts only once the fan is out; in the pocket and mid-pop the card
+           * is not somewhere a reader is meant to pick it up. */}
+          <TiltCard radius={34 * (g.cardW / 304)} enabled={fanned}>
+            <CardFace card={card} width={g.cardW} />
+          </TiltCard>
+          <m.div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[#060a07]"
+            style={{ borderRadius: 34 * (g.cardW / 304) }}
+            initial={false}
+            animate={{ opacity: dimmed ? FOCUS_DIM : 0 }}
+            transition={still ? { duration: 0 } : { duration: 0.25, ease: "easeOut" }}
+          />
+        </div>
+      </m.div>
     </m.div>
   );
 }
@@ -511,9 +629,9 @@ function MainWalletBackground() {
  * by a blurred stadium mask so it reaches the head of the section and falls
  * away to nothing at the corners.
  *
- * The mask and the 40% opacity are already in the file's alpha: this section
- * pins, and a live `mask-image` over a layer this size inside a sticky
- * container is a masking pass the browser redoes as that container moves.
+ * The mask and the 40% opacity are already in the file's alpha: a live
+ * `mask-image` over a layer this size is a masking pass the browser redoes
+ * as the section scrolls.
  * scripts/build-wallet-backdrop.mjs bakes it, from Figma's own mask export —
  * point it at a new source image to replace this.
  *

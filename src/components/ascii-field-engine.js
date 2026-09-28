@@ -36,7 +36,14 @@ function createAsciiField(canvas, options) {
     // browser re-run a masking pass over the whole layer every time the canvas
     // changes, which here is every frame. Done inside the canvas it is one
     // composited fill, and the result is the same pixels.
-    fade: null
+    fade: null,
+    // "glyph" draws the ramp characters. "dither" draws the same field as an
+    // ordered (Bayer 4x4) dither of square pixels with a soft glow under it.
+    render: "glyph",
+    pixel: 3,          // dither: CSS px per dither dot
+    sub: 3,            // dither: dots per noise sample, each way
+    gain: 1.15,        // dither: density multiplier before thresholding
+    glow: 0.7          // dither: glow layer strength, 0 turns it off
   };
   var k;
   if (options) for (k in options) if (options[k] !== undefined) o[k] = options[k];
@@ -47,7 +54,7 @@ function createAsciiField(canvas, options) {
   var cols = 0, rows = 0, cw = 8, ch = 18, aspect = 2, dpr = 1;
   var heat = new Float32Array(0);
   var glitch = new Float32Array(0);
-  var lut = [], lutKey = "";
+  var lut = [], lutRGB = [], lut32 = null, lutKey = "";
   var ripples = [];
   // Glyph atlas: every ramp character pre-rendered once in every bucket colour,
   // so a frame is ~3,000 blits instead of ~3,000 fillText calls. Text drawing
@@ -190,7 +197,7 @@ function createAsciiField(canvas, options) {
     lutKey = key;
     var lo = hex2rgb(o.dim), hi = hex2rgb(o.bright);
     var acc = hex2rgb(o.accent), hot = hex2rgb(o.accentHot);
-    lut = [];
+    lut = []; lutRGB = []; lut32 = new Uint32Array(N_BUCKETS);
     for (var s = 0; s < BASE_LEVELS; s++) {
       // Explicit per-level colours win; otherwise interpolate dim -> bright.
       var base = o.levels && o.levels[s]
@@ -201,6 +208,9 @@ function createAsciiField(canvas, options) {
         var target = mix(acc, hot, Math.max(0, (m - 0.62) / 0.38));
         var c = mix(base, target, Math.pow(m, 0.6));
         lut.push("rgb(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + ")");
+        lutRGB.push([c[0] | 0, c[1] | 0, c[2] | 0]);
+        // ImageData is RGBA in memory; on little-endian that reads as ABGR.
+        lut32[lut.length - 1] = ((255 << 24) | ((c[2] | 0) << 16) | ((c[1] | 0) << 8) | (c[0] | 0)) >>> 0;
       }
     }
   }
@@ -215,6 +225,7 @@ function createAsciiField(canvas, options) {
    * these glyphs are thin marks and every transparent pixel in a tile is
    * still blended once per cell drawn. */
   function buildAtlas() {
+    if (o.render === "dither") return;
     var key = dpr + "|" + o.cell + "|" + o.fontWeight + "|" + fontFamily + "|" + o.ramp + "|" + lutKey;
     if (atlas && key === atlasKey) return;
     atlasKey = key;
@@ -320,11 +331,23 @@ function createAsciiField(canvas, options) {
     ctx.font = o.fontWeight + " " + o.cell + "px " + fontFamily;
     ctx.textBaseline = "middle";
     measuredCell = o.cell;
-    cw = (ctx.measureText("M").width || o.cell * 0.6) * o.tracking;
-    ch = Math.round(o.cell * o.lineHeight);
-    aspect = ch / cw;
-    cols = Math.ceil(w / cw) + 1;
-    rows = Math.ceil(h / ch) + 1;
+    if (o.render === "dither") {
+      // The noise grid is `sub` dots on a side; dots between samples are
+      // interpolated, so the field costs about what the glyph grid did.
+      cw = ch = o.pixel * o.sub;
+      aspect = 1;
+      dbw = Math.ceil(w / o.pixel);
+      dbh = Math.ceil(h / o.pixel);
+      cols = Math.ceil(dbw / o.sub) + 2;
+      rows = Math.ceil(dbh / o.sub) + 2;
+      setupDither();
+    } else {
+      cw = (ctx.measureText("M").width || o.cell * 0.6) * o.tracking;
+      ch = Math.round(o.cell * o.lineHeight);
+      aspect = ch / cw;
+      cols = Math.ceil(w / cw) + 1;
+      rows = Math.ceil(h / ch) + 1;
+    }
     if (heat.length !== cols * rows) {
       heat = new Float32Array(cols * rows);
       glitch = new Float32Array(cols * rows);
@@ -333,6 +356,105 @@ function createAsciiField(canvas, options) {
     buildAtlas();
     buildCellPositions();   // cols/cw/ch move without the atlas having to
     buildNoiseTables();
+  }
+
+  /* ---------- dither ---------- */
+  var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  for (var bq = 0; bq < 16; bq++) BAYER[bq] = (BAYER[bq] + 0.5) / 16;
+  var dbw = 0, dbh = 0;
+  var dCan = null, dCtx = null, dImg = null, d32 = null;
+  var gCan = null, gCtx = null, gImg = null, g32 = null;
+  var vGrid = null, hGrid = null;
+
+  function setupDither() {
+    if (!dCan) {
+      dCan = document.createElement("canvas");
+      gCan = document.createElement("canvas");
+      dCtx = dCan.getContext("2d");
+      gCtx = gCan.getContext("2d");
+    }
+    if (dCan.width !== dbw || dCan.height !== dbh) {
+      dCan.width = dbw; dCan.height = dbh;
+      dImg = dCtx.createImageData(dbw, dbh);
+      d32 = new Uint32Array(dImg.data.buffer);
+    }
+    if (gCan.width !== cols || gCan.height !== rows) {
+      gCan.width = cols; gCan.height = rows;
+      gImg = gCtx.createImageData(cols, rows);
+      g32 = new Uint32Array(gImg.data.buffer);
+    }
+    if (!vGrid || vGrid.length !== cols * rows) {
+      vGrid = new Float32Array(cols * rows);
+      hGrid = new Float32Array(cols * rows);
+    }
+  }
+
+  function bucket(v, h) {
+    var sLvl = Math.min(BASE_LEVELS - 1, Math.max(0, Math.floor(Math.max(0, v) * BASE_LEVELS)));
+    var hLvl = Math.min(HEAT_LEVELS - 1, Math.max(0, Math.floor(h * (HEAT_LEVELS - 1))));
+    return sLvl * HEAT_LEVELS + hLvl;
+  }
+
+  function drawDither(vw, vh) {
+    var floorT = o.coverage / 100;
+    var span = 1 / Math.max(0.12, 1 - floorT);
+    var glowK = o.glow * 255;
+    var x, y, idx;
+
+    // Samples, plus the glow layer: one soft pixel per sample, lit in
+    // proportion to the field, which the browser's smooth upscale spreads.
+    for (y = 0; y < rows; y++) {
+      for (x = 0; x < cols; x++) {
+        idx = y * cols + x;
+        var v = ((fbmGrid(x, y) - 0.5) * 1.85 + 0.5 - floorT) * span;
+        var h = heat[idx];
+        vGrid[idx] = v;
+        hGrid[idx] = h;
+        var tot = v + h * 1.05;
+        if (tot <= 0.015 || glowK <= 0) { g32[idx] = 0; continue; }
+        var a = Math.min(255, tot * glowK) | 0;
+        var rgb = lutRGB[bucket(v, h)];
+        g32[idx] = ((a << 24) | (rgb[2] << 16) | (rgb[1] << 8) | rgb[0]) >>> 0;
+      }
+    }
+
+    var sub = o.sub, inv = 1 / sub, gain = o.gain;
+    for (var j = 0; j < dbh; j++) {
+      var gy = j * inv, y0 = gy | 0, fy = gy - y0;
+      var r0 = y0 * cols, r1 = r0 + cols, brow = (j & 3) << 2, orow = j * dbw;
+      for (var i = 0; i < dbw; i++) {
+        var gx = i * inv, x0 = gx | 0, fx = gx - x0;
+        var a0 = r0 + x0, a1 = r1 + x0;
+        var vt = vGrid[a0] + (vGrid[a0 + 1] - vGrid[a0]) * fx;
+        var vb = vGrid[a1] + (vGrid[a1 + 1] - vGrid[a1]) * fx;
+        var vv = vt + (vb - vt) * fy;
+        var ht = hGrid[a0] + (hGrid[a0 + 1] - hGrid[a0]) * fx;
+        var hb = hGrid[a1] + (hGrid[a1 + 1] - hGrid[a1]) * fx;
+        var hh = ht + (hb - ht) * fy;
+        var total = vv + hh * 1.05;
+        if (total <= 0.015 || total * gain <= BAYER[brow | (i & 3)]) { d32[orow + i] = 0; continue; }
+        d32[orow + i] = lut32[bucket(vv, hh)];
+      }
+    }
+
+    dCtx.putImageData(dImg, 0, 0);
+    if (glowK > 0) gCtx.putImageData(gImg, 0, 0);
+
+    if (o.background) {
+      ctx.fillStyle = o.background;
+      ctx.fillRect(0, 0, vw, vh);
+    } else {
+      ctx.clearRect(0, 0, vw, vh);
+    }
+    if (glowK > 0) {
+      // Sample (x, y) sits at (x*cw, y*ch); a pixel's centre is at +0.5, so
+      // shift back half a cell to line the glow up with the dots.
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(gCan, -cw * 0.5, -ch * 0.5, cols * cw, rows * ch);
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(dCan, 0, 0, dbw * o.pixel, dbh * o.pixel);
+    ctx.imageSmoothingEnabled = true;
   }
 
   /* ---------- hover writers ---------- */
@@ -464,6 +586,11 @@ function createAsciiField(canvas, options) {
     advanceNoiseZ();
 
     var vw = canvas.width / dpr, vh = canvas.height / dpr;
+    if (o.render === "dither") {
+      drawDither(vw, vh);
+      applyFade(vw, vh);
+      return;
+    }
     if (o.background) {
       ctx.fillStyle = o.background;
       ctx.fillRect(0, 0, vw, vh);
